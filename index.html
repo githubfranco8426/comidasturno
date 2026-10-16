@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MacroTurno — Tu nutrición, a tu ritmo</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', ' system-ui', 'sans-serif'],
+          },
+          colors: {
+            cyan: { 300: '#a9f3d4', 400: '#7ce4b6', 500: '#57cfa0', 600: '#35b887', 950: '#102e26' },
+            slate: {
+              850: '#131c2e',
+              925: '#0b1120',
+              950: '#060a14'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #060a14;
+      color: #f1f5f9;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1120;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    .glass-card {
+      background: rgba(19, 28, 46, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.55);
+    }
+    .glass-header {
+      background: rgba(11, 17, 32, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+    }
+    .glass-nav {
+      background: rgba(11, 17, 32, 0.95);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    .progress-ring {
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade {
+      animation: fadeIn 0.2s ease-out forwards;
+    }
+  </style>
+<style>
+/* MacroTurno visual edition — responsive, accessible, original data retained. */
+:root { color-scheme: dark; --surface:#121d25; --line:#26363e; --mint:#7ce4b6; }
+body { background:#0b1218; background-image:radial-gradient(ellipse at 90% 0%,rgba(56,119,100,.12),transparent 45%); color:#e8f0ee; padding-bottom:112px!important; }
+.max-w-3xl { max-width:1120px!important; }
+main { padding-top:32px!important; }
+.glass-header { background:rgba(11,18,24,.96); border-bottom:1px solid var(--line); padding-top:18px; padding-bottom:14px; }
+.glass-header h1 { letter-spacing:-.7px; font-size:20px; }
+.brand-pro { display:inline-block; font-size:9px; letter-spacing:1.5px; color:var(--mint); margin-left:8px; vertical-align:middle; }
+.glass-header .bg-gradient-to-br { background:#163b30!important; color:var(--mint); box-shadow:none; border:1px solid #315447; }
+.glass-header .fa-bolt { color:var(--mint); }
+#headerShiftBadge { font-size:9px; background:#202b3b; border-color:#344257; color:#bdcbe8; }
+#headerSubtitle { font-size:11px; margin-top:5px; }
+#dayTabsContainer { margin-top:20px; gap:8px; }
+#dayTabsContainer button { min-height:42px; padding:10px 18px; border-radius:12px; box-shadow:none; }
+.glass-card { background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:0 8px 28px rgba(0,0,0,.08); backdrop-filter:none; }
+.dashboard-intro { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:8px; }
+.eyebrow { font-size:10px; font-weight:700; color:var(--mint); letter-spacing:2.2px; }
+.dashboard-intro h2 { font-size:clamp(27px,4vw,38px); line-height:1.2; font-weight:700; letter-spacing:-1.3px; margin:9px 0; }
+.dashboard-intro p { color:#92a5af; font-size:13px; line-height:1.7; }
+.intro-action { color:var(--mint); border:1px solid #345548; border-radius:12px; padding:13px 17px; font-size:12px; font-weight:700; white-space:nowrap; }
+.intro-action i { margin-right:7px; }
+#energy-summary { padding:28px; background:linear-gradient(115deg,#172a2a,#121d25 70%); }
+#calCurrent { font-size:52px; line-height:1.35; letter-spacing:-2.7px; font-weight:700; }
+#calRemaining { display:block; font-size:25px; margin-top:12px; letter-spacing:-.7px; }
+#energy-summary > .h-3 { height:7px; border:0; margin:17px 0 24px; }
+#calProgressBar { background:var(--mint)!important; }
+#energy-summary > .grid > div { background:rgba(8,18,22,.35); border-color:#2b3c41; padding:16px; border-radius:14px; }
+#energy-summary .text-\[10px\] { font-size:11px; }
+#energy-summary .grid .font-extrabold.text-white { font-size:19px; margin-top:8px; }
+#meal-composer { padding:24px; border-color:#36594b; }
+#meal-composer label { text-transform:none; font-size:20px; letter-spacing:-.5px; color:#eff6f3; }
+#meal-composer label i { color:var(--mint); font-size:16px; margin-right:5px; }
+#meal-composer > .flex:first-child { margin-bottom:20px; gap:12px; }
+#btnRegisterNatural { background:var(--mint)!important; box-shadow:none; color:#10291f; min-height:48px; }
+#naturalFoodInput { min-height:48px; background:#0c161d; }
+.composer-hint { font-size:11px; color:#8ca1ac; line-height:1.6; margin-top:10px; }
+#meal-composer [id^="btnQuick"] { min-height:38px; background:#192730; border-color:#2b3b44; font-size:11px; }
+#daily-habits > .glass-card { padding:20px; }
+#daily-habits button { min-height:36px; }
+#daily-habits [id^="btnSupp"] { min-height:58px; }
+#daily-meals { padding:24px; }
+#daily-meals h2 { text-transform:none; font-size:19px; letter-spacing:-.4px; }
+#mealsListContainer > div { padding:16px; border-radius:14px; background:#101a22; border-color:#26363f; }
+.glass-nav { left:50%; transform:translateX(-50%); bottom:18px; width:min(560px,calc(100% - 24px)); border:1px solid #34464b; border-radius:20px; background:rgba(19,31,39,.97); padding:8px; box-shadow:0 12px 40px #0007; }
+.bottom-nav-btn { min-height:54px; gap:3px; font-size:11px; border-radius:13px; }
+.bottom-nav-btn i { font-size:17px; }
+input,select,textarea { accent-color:var(--mint); }
+button,a,input,select,textarea { touch-action:manipulation; }
+button { transition:background .18s,border-color .18s,transform .18s; }
+button:hover { filter:brightness(1.08); }
+:focus-visible { outline:2px solid var(--mint)!important; outline-offset:4px; }
+#toastNotification { bottom:104px; max-width:calc(100% - 32px); }
+@media(min-width:960px) {
+ #view-tracker { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:20px; align-items:start; }
+ #view-tracker.hidden { display:none; }
+ #view-tracker > * { margin-top:0!important; min-width:0; }
+ .dashboard-intro { grid-column:1/-1; }
+ #energy-summary { grid-column:1; grid-row:2; height:100%; }
+ #daily-habits { grid-column:2; grid-row:2; grid-template-columns:1fr; }
+ #meal-composer { grid-column:1/-1; grid-row:3; }
+ #daily-meals { grid-column:1/-1; grid-row:4; }
+ #daily-habits > .glass-card { padding:16px; }
+}
+@media(max-width:639px) {
+ main { padding-top:24px!important; padding-left:16px!important; padding-right:16px!important; }
+ .glass-header { padding-left:16px; padding-right:16px; }
+ .glass-header > div:first-child { flex-wrap:wrap; row-gap:12px; }
+ .glass-header > div:first-child > div:first-child { flex:1 1 210px; }
+ #headerShiftBadge { display:none; }
+ #headerSubtitle { max-width:235px; }
+ .glass-header h1 { font-size:18px; }
+ .intro-action { display:none; }
+ .dashboard-intro { margin-bottom:24px; }
+ .dashboard-intro p { font-size:12px; }
+ #energy-summary { padding:20px 16px; }
+ #calCurrent { font-size:44px; }
+ #calRemaining { font-size:20px; }
+ #energy-summary > .grid { gap:7px; }
+ #energy-summary > .grid > div { padding:12px 8px; }
+ #energy-summary .grid .font-extrabold.text-white { font-size:17px; }
+ #energy-summary .grid .text-xs { font-size:10px; }
+ #meal-composer,#daily-meals { padding:20px 16px; }
+ #meal-composer label { font-size:18px; }
+ #naturalFoodInput,input[type="number"],select { font-size:16px; }
+ #meal-composer [id^="btnQuick"] { text-align:left; }
+ #daily-habits .grid-cols-2 { gap:8px; }
+ #coffeeCutoffBadge { font-size:10px; }
+ .glass-nav { bottom:max(10px,env(safe-area-inset-bottom)); }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+</style>
+</head>
+<body class="min-h-screen pb-24 text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- TOP STICKY HEADER -->
+  <header class="glass-header sticky top-0 z-30 px-4 py-3">
+    <div class="max-w-3xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 flex-shrink-0">
+          <i class="fa-solid fa-bolt text-white text-lg"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white truncate">MacroTurno<span class="brand-pro">PRO</span></h1>
+            <span id="headerShiftBadge" class="px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              En Turno Noche
+            </span>
+          </div>
+          <p id="headerSubtitle" class="text-xs text-slate-400 truncate mt-0.5">
+            Jueves 15 • Entreno Lower + Turno Noche (20:00–08:00)
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Icons -->
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <button type="button" id="btnCopySummary" onclick="copyDailySummary()" title="Copiar resumen para el chat" aria-label="Copiar resumen para el chat" class="h-9 px-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 flex items-center gap-1.5 text-xs font-semibold transition active:scale-95">
+          <i class="fa-regular fa-copy text-cyan-400"></i>
+          <span class="hidden sm:inline">Copiar</span>
+        </button>
+        <button type="button" id="btnOpenCalcModal" onclick="openPhasePresetModal()" title="Presets Ciclo 4x4" aria-label="Presets Ciclo 4x4" class="h-9 w-9 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-400 border border-slate-700/80 flex items-center justify-center transition active:scale-95">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+        <button type="button" id="btnOpenGoalsModal" onclick="openGoalsModal()" title="Configurar Metas Diarias" aria-label="Configurar Metas Diarias" class="h-9 w-9 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/80 flex items-center justify-center transition active:scale-95">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- DAY / CYCLE TABS BAR -->
+    <div class="max-w-3xl mx-auto mt-3 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="dayTabsContainer">
+      <!-- Populated dynamically via JS -->
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-3xl mx-auto px-4 pt-4 space-y-4">
+
+    <!-- ==================== VIEW 1: TURNO HOY (TRACKER) ==================== -->
+    <section id="view-tracker" class="space-y-4 animate-fade">
+
+      <div class="dashboard-intro">
+        <div><span class="eyebrow">NUTRICIÓN A TU RITMO</span><h2>Tu turno. Tu equilibrio.</h2><p>Cada comida cuenta. Lleva tu día, un paso a la vez.</p></div>
+        <a href="#meal-composer" class="intro-action" onclick="document.getElementById('naturalFoodInput').focus(); return false;"><i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar comida</a>
+      </div>
+      <!-- CALORIE & MACRO SUMMARY CARD -->
+      <div id="energy-summary" class="glass-card rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
+        <div class="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Energía de tu día</span>
+            <div class="flex items-baseline gap-1.5 mt-0.5">
+              <span id="calCurrent" class="text-2xl sm:text-3xl font-extrabold text-white">1815</span>
+              <span class="text-sm text-slate-400 font-medium">/ <span id="calTarget">1980</span> kcal</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Disponible</span>
+            <span id="calRemaining" class="text-lg sm:text-xl font-extrabold text-emerald-400">165 kcal</span>
+          </div>
+        </div>
+
+        <!-- Main Calorie Progress Bar -->
+        <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800 mb-4">
+          <div id="calProgressBar" class="progress-ring h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full" style="width: 91%"></div>
+        </div>
+
+        <!-- 3 Macro Breakdown Cards -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <!-- Protein -->
+          <div class="bg-slate-900/90 border border-slate-800/90 rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-semibold text-rose-400 flex items-center gap-1">
+                <i class="fa-solid fa-drumstick-bite text-[10px]"></i> Proteína
+              </span>
+              <span id="protCheck" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold hidden">✓ Meta</span>
+            </div>
+            <div class="text-sm sm:text-base font-extrabold text-white">
+              <span id="protCurrent">188</span> <span class="text-xs font-normal text-slate-400">/ <span id="protTarget">185</span>g</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-2">
+              <div id="protBar" class="progress-ring h-full bg-rose-500 rounded-full" style="width: 100%"></div>
+            </div>
+            <div id="protSub" class="text-[10px] text-slate-400 mt-1">Restan: 0g</div>
+          </div>
+
+          <!-- Carbs -->
+          <div class="bg-slate-900/90 border border-slate-800/90 rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-semibold text-amber-400 flex items-center gap-1">
+                <i class="fa-solid fa-wheat-awn text-[10px]"></i> Carbos
+              </span>
+              <span id="carbCheck" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold hidden">✓</span>
+            </div>
+            <div class="text-sm sm:text-base font-extrabold text-white">
+              <span id="carbCurrent">148</span> <span class="text-xs font-normal text-slate-400">/ <span id="carbTarget">165</span>g</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-2">
+              <div id="carbBar" class="progress-ring h-full bg-amber-400 rounded-full" style="width: 89%"></div>
+            </div>
+            <div id="carbSub" class="text-[10px] text-slate-400 mt-1">Restan: 17g</div>
+          </div>
+
+          <!-- Fats -->
+          <div class="bg-slate-900/90 border border-slate-800/90 rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-semibold text-sky-400 flex items-center gap-1">
+                <i class="fa-solid fa-droplet text-[10px]"></i> Grasas
+              </span>
+              <span id="fatCheck" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold hidden">✓</span>
+            </div>
+            <div class="text-sm sm:text-base font-extrabold text-white">
+              <span id="fatCurrent">46</span> <span class="text-xs font-normal text-slate-400">/ <span id="fatTarget">60</span>g</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-2">
+              <div id="fatBar" class="progress-ring h-full bg-sky-400 rounded-full" style="width: 76%"></div>
+            </div>
+            <div id="fatSub" class="text-[10px] text-slate-400 mt-1">Restan: 14g</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK BIO-TRACKERS: CREATINE, WATER, CAFFEINE & SUPPLEMENTS -->
+      <div id="daily-habits" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Creatine & Circadian Stack Card -->
+        <div class="glass-card rounded-2xl p-3.5 flex flex-col justify-between gap-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-capsules text-cyan-400"></i> Suplementos
+            </span>
+            <span id="suppCountBadge" class="text-[11px] font-semibold text-cyan-400">1/4 tomados</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btnSuppCreatine" onclick="toggleSupplement('creatine')" class="flex items-center gap-2 p-2 rounded-xl border text-left transition text-xs font-medium">
+              <span id="iconSuppCreatine" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px]">✓</span>
+              <div class="truncate">
+                <div class="font-bold leading-tight">Creatina 5g</div>
+                <div class="text-[10px] opacity-75">Fuerza / Cognición</div>
+              </div>
+            </button>
+            <button type="button" id="btnSuppMagnesium" onclick="toggleSupplement('magnesium')" class="flex items-center gap-2 p-2 rounded-xl border text-left transition text-xs font-medium">
+              <span id="iconSuppMagnesium" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px]"></span>
+              <div class="truncate">
+                <div class="font-bold leading-tight">Magnesio 400mg</div>
+                <div class="text-[10px] opacity-75">Pre-sueño (Fase N3)</div>
+              </div>
+            </button>
+            <button type="button" id="btnSuppAshwa" onclick="toggleSupplement('ashwagandha')" class="flex items-center gap-2 p-2 rounded-xl border text-left transition text-xs font-medium">
+              <span id="iconSuppAshwa" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px]"></span>
+              <div class="truncate">
+                <div class="font-bold leading-tight">Ashwagandha</div>
+                <div class="text-[10px] opacity-75">Bajar Cortisol HPA</div>
+              </div>
+            </button>
+            <button type="button" id="btnSuppMelatonin" onclick="toggleSupplement('melatonin')" class="flex items-center gap-2 p-2 rounded-xl border text-left transition text-xs font-medium">
+              <span id="iconSuppMelatonin" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px]"></span>
+              <div class="truncate">
+                <div class="font-bold leading-tight">Melatonina</div>
+                <div class="text-[10px] opacity-75">Cronobiótico</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hydration & NEAT / Caffeine Card -->
+        <div class="glass-card rounded-2xl p-3.5 flex flex-col justify-between gap-2.5">
+          <!-- Water Row -->
+          <div class="flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
+                <i class="fa-solid fa-glass-water"></i>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400 font-medium">Agua turno</div>
+                <div class="text-base font-extrabold text-white"><span id="waterDisplay">1.50</span>L <span class="text-[11px] font-normal text-slate-400">/ 3.0L</span></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" id="btnWaterMinus" aria-label="Restar 250 ml de agua" onclick="adjustWater(-0.25)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition active:scale-95">-</button>
+              <button type="button" id="btnWaterPlus" onclick="adjustWater(0.25)" class="px-2.5 h-8 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold text-xs transition active:scale-95">+250ml</button>
+            </div>
+          </div>
+
+          <!-- Caffeine & Steps Row -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-xl px-2.5 py-2 flex items-center justify-between">
+              <div>
+                <div class="text-[10px] text-slate-400 uppercase font-bold">Cafeína (Máx 200)</div>
+                <div class="text-xs font-extrabold text-amber-400"><span id="caffeineDisplay">100</span> mg</div>
+              </div>
+              <div class="flex gap-1">
+                <button type="button" id="btnCaffMinus" aria-label="Restar 50 mg de cafeína" onclick="adjustCaffeine(-50)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">-</button>
+                <button type="button" id="btnCaffPlus" onclick="adjustCaffeine(50)" class="px-1.5 h-6 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">+50</button>
+              </div>
+            </div>
+
+            <div class="bg-slate-900/80 border border-slate-800 rounded-xl px-2.5 py-2 flex items-center justify-between">
+              <div>
+                <div class="text-[10px] text-slate-400 uppercase font-bold">Pasos NEAT</div>
+                <div class="text-xs font-extrabold text-emerald-400"><span id="stepsDisplay">8,500</span></div>
+              </div>
+              <div class="flex gap-1">
+                <button type="button" id="btnStepsMinus" aria-label="Restar mil pasos" onclick="adjustSteps(-1000)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">-</button>
+                <button type="button" id="btnStepsPlus" onclick="adjustSteps(1000)" class="px-1.5 h-6 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">+1k</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NATURAL FOOD LOGGING SECTION -->
+      <div id="meal-composer" class="glass-card rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between mb-2.5">
+          <label for="naturalFoodInput" class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> ¿Qué comiste?
+          </label>
+          <button type="button" id="btnOpenManualModal" onclick="openManualFoodModal()" class="text-xs font-bold text-slate-300 hover:text-cyan-400 bg-slate-800/90 px-2.5 py-1 rounded-lg border border-slate-700 transition">
+            Ingreso manual
+          </button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="flex items-center bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 sm:w-32 flex-shrink-0">
+            <i class="fa-regular fa-clock text-slate-400 text-xs mr-2"></i>
+            <input type="time" id="mealTimeInput" aria-label="Hora de la comida" value="03:16" class="bg-transparent text-sm font-semibold text-white focus:outline-none w-full">
+          </div>
+          <div class="relative flex-1">
+            <input type="text" id="naturalFoodInput" oninput="updateLiveNaturalPreview()" onkeydown="if(event.key==='Enter'){registerNaturalFood();}" placeholder="Ej: 200g de pollo con 180g de arroz" class="w-full bg-slate-900 border border-slate-700/80 focus:border-cyan-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition">
+          </div>
+          <button type="button" id="btnRegisterNatural" onclick="registerNaturalFood()" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-lg shadow-cyan-500/20 transition active:scale-95 flex items-center justify-center gap-1.5 flex-shrink-0">
+            <i class="fa-solid fa-plus"></i>
+            <span>Registrar Comida</span>
+          </button>
+        </div>
+
+        <p class="composer-hint">Escribe alimentos y cantidades, o usa el ingreso manual para valores exactos.</p>
+        <!-- Live Natural Parser Preview Box -->
+        <div id="naturalPreviewBox" class="hidden mt-2.5 p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold text-[10px]">Estimación</span>
+            <span id="naturalPreviewText" class="text-slate-200 font-medium">Detectado:</span>
+          </div>
+          <div id="naturalPreviewMacros" class="font-bold text-cyan-300">0 kcal | P: 0g | C: 0g | G: 0g</div>
+        </div>
+
+        <!-- 1-Touch Quick Shortcuts -->
+        <div class="mt-3.5">
+          <div class="text-[11px] font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> Tus favoritos · agrega con un toque
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" id="btnQuick1" onclick="quickLogMeal('Colación Guardia: Yogur Proteico + 10 Almendras', 170, 14, 9, 8)" class="text-xs bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 rounded-xl px-2.5 py-1.5 font-medium transition active:scale-95">
+              + Yogur + 10 Almendras <span class="text-cyan-400 font-bold">(170 kcal)</span>
+            </button>
+            <button type="button" id="btnQuick2" onclick="quickLogMeal('Rescate Madrugada: Yogur Proteico', 110, 12, 7, 3)" class="text-xs bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 rounded-xl px-2.5 py-1.5 font-medium transition active:scale-95">
+              + Yogur Prot <span class="text-cyan-400 font-bold">(110 kcal)</span>
+            </button>
+            <button type="button" id="btnQuick3" onclick="quickLogMeal('Desayuno Post-Guardia: 3 Huevos + Marraqueta', 485, 29, 54, 17, '09:00')" class="text-xs bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 rounded-xl px-2.5 py-1.5 font-medium transition active:scale-95">
+              + 3 Huevos + Marraqueta <span class="text-amber-400 font-bold">(09:00 AM)</span>
+            </button>
+            <button type="button" id="btnQuick4" onclick="quickLogMeal('Post-Entreno: 1 scoop Whey + Plátano', 220, 25, 27, 1)" class="text-xs bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 rounded-xl px-2.5 py-1.5 font-medium transition active:scale-95">
+              + Whey + Plátano <span class="text-cyan-400 font-bold">(220 kcal)</span>
+            </button>
+            <button type="button" id="btnQuick5" onclick="quickLogMeal('Tupper Guardia: 220g Pollo + 180g Arroz + Brócoli', 620, 71, 50, 12)" class="text-xs bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 rounded-xl px-2.5 py-1.5 font-medium transition active:scale-95">
+              + Tupper Pollo + Arroz <span class="text-emerald-400 font-bold">(620 kcal)</span>
+            </button>
+            <button type="button" id="btnQuick6" onclick="quickLogMeal('Freno Cortisol: 1 Scoop Caseína / Whey + 10 Almendras', 180, 26, 4, 7)" class="text-xs bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 rounded-xl px-2.5 py-1.5 font-medium transition active:scale-95">
+              + Whey + Almendras <span class="text-purple-400 font-bold">(180 kcal)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DAILY HISTORY LIST -->
+      <div id="daily-meals" class="glass-card rounded-2xl p-4 shadow-lg">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-extrabold uppercase tracking-wider text-white">Tus comidas</h2>
+            <span id="mealCountBadge" class="px-2 py-0.5 text-xs rounded-full bg-slate-800 text-slate-300 font-bold">4 comidas</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="coffeeCutoffBadge" class="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-mug-hot"></i> Corte café: 02:30 AM
+            </span>
+          </div>
+        </div>
+
+        <div id="mealsListContainer" class="space-y-2.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: POST-TURNO & PROTOCOLOS 4x4 ==================== -->
+    <section id="view-postturno" class="space-y-4 hidden animate-fade">
+      <div class="glass-card rounded-2xl p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Crononutrición & Eje HPA</span>
+            <h2 class="text-lg font-extrabold text-white">Estrategia por Fase de Turno</h2>
+          </div>
+          <button type="button" id="btnLoadFullSaliente" onclick="loadAllSalienteMeals()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center gap-1.5">
+            <span>Cargar todo en Viernes 16 (Saliente)</span>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+          </button>
+        </div>
+
+        <!-- Protocol Phase Selector Pills -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          <button type="button" id="protoTab-saliente" onclick="switchProtocolGuide('saliente')" class="proto-tab-btn px-3 py-2 rounded-xl text-xs font-bold border transition text-left bg-indigo-600/25 border-indigo-500 text-white">
+            <div class="text-[10px] text-indigo-300">Día 3 • Saliente</div>
+            <div>Post-Turno Noche</div>
+          </button>
+          <button type="button" id="protoTab-noche" onclick="switchProtocolGuide('noche')" class="proto-tab-btn px-3 py-2 rounded-xl text-xs font-bold border transition text-left bg-slate-900 border-slate-800 text-slate-400 hover:text-white">
+            <div class="text-[10px] text-cyan-400">Día 2 • 20:00–08:00</div>
+            <div>Turno Nocturno</div>
+          </button>
+          <button type="button" id="protoTab-largo" onclick="switchProtocolGuide('largo')" class="proto-tab-btn px-3 py-2 rounded-xl text-xs font-bold border transition text-left bg-slate-900 border-slate-800 text-slate-400 hover:text-white">
+            <div class="text-[10px] text-amber-400">Día 1 • 08:00–20:00</div>
+            <div>Turno Diurno</div>
+          </button>
+          <button type="button" id="protoTab-libre" onclick="switchProtocolGuide('libre')" class="proto-tab-btn px-3 py-2 rounded-xl text-xs font-bold border transition text-left bg-slate-900 border-slate-800 text-slate-400 hover:text-white">
+            <div class="text-[10px] text-emerald-400">Día 4 • Recuperación</div>
+            <div>Día Libre / Reset</div>
+          </button>
+        </div>
+
+        <!-- Dynamic Protocol Cards Container -->
+        <div id="protocolCardsContainer" class="space-y-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Physiological Key Rules Summary -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-brain"></i> Reglas Fisiológicas Clave (Protocolo Maestro)
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300">
+          <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+            <div class="font-bold text-white mb-1 flex items-center gap-1.5">
+              <i class="fa-solid fa-sun text-amber-400"></i> Bloqueo Fotónico al Salir (08:00)
+            </div>
+            Usa lentes oscuros o filtro de luz azul apenas salgas del Hospital Alto Hospicio para frenar el tracto retinohipotalámico y permitir la siesta diurna.
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+            <div class="font-bold text-white mb-1 flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-heart text-rose-400"></i> Sinergia Cortisol + Insulina
+            </div>
+            Entre las 00:00 y 06:00 AM hay resistencia transitoria a la insulina (baja traslocación GLUT4). Prefiere proteína limpia o comidas líquidas bajas en carbos/grasas.
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+            <div class="font-bold text-white mb-1 flex items-center gap-1.5">
+              <i class="fa-solid fa-dumbbell text-emerald-400"></i> Fuerza RPE 8-9 + Cardio Zona 2
+            </div>
+            4 sesiones semanales de básicos pesados + 20-30 min en Zona 2 (60-70% FC máx) post-pesas para oxidar ácidos grasos movilizados por catecolaminas.
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+            <div class="font-bold text-white mb-1 flex items-center gap-1.5">
+              <i class="fa-solid fa-bed text-indigo-400"></i> Higiene de Siesta Post-Guardia
+            </div>
+            Blackout estricto + antifaz + tapones entre 17°C y 19°C. Toma 1-3 mg de Melatonina + 400 mg de Bisglicinato de Magnesio 30 min antes de dormir.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: ALIMENTOS FRECUENTES ==================== -->
+    <section id="view-alimentos" class="space-y-4 hidden animate-fade">
+      <div class="glass-card rounded-2xl p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400">Base de Datos Rápida</span>
+            <h2 class="text-lg font-extrabold text-white">Biblioteca de Alimentos & Tuppers</h2>
+          </div>
+          <button type="button" id="btnOpenNewFoodModal" onclick="openCustomFoodModal()" class="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> Crear Alimento
+          </button>
+        </div>
+
+        <!-- Search & Portion Multiplier Bar -->
+        <div class="flex flex-col sm:flex-row gap-2.5 mb-3">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="foodSearchInput" oninput="renderFoodLibrary()" placeholder="Buscar pollo, marraqueta, yogur, palta, whey..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+          </div>
+          <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
+            <span class="text-[11px] text-slate-400 px-2 font-semibold">Porción:</span>
+            <button type="button" id="mult-0.5" onclick="setPortionMultiplier(0.5)" class="mult-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">0.5x</button>
+            <button type="button" id="mult-1" onclick="setPortionMultiplier(1)" class="mult-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-500 text-slate-950 transition">1x</button>
+            <button type="button" id="mult-1.5" onclick="setPortionMultiplier(1.5)" class="mult-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">1.5x</button>
+            <button type="button" id="mult-2" onclick="setPortionMultiplier(2)" class="mult-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">2x</button>
+          </div>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div class="flex gap-1.5 overflow-x-auto pb-2 mb-3">
+          <button type="button" id="cat-all" onclick="setFoodCategory('all')" class="cat-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-950">Todos</button>
+          <button type="button" id="cat-proteina" onclick="setFoodCategory('proteina')" class="cat-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300">Proteínas</button>
+          <button type="button" id="cat-carbo" onclick="setFoodCategory('carbo')" class="cat-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300">Carbohidratos</button>
+          <button type="button" id="cat-grasa" onclick="setFoodCategory('grasa')" class="cat-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300">Grasas</button>
+          <button type="button" id="cat-snack" onclick="setFoodCategory('snack')" class="cat-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300">Lácteos & Guardia</button>
+        </div>
+
+        <!-- Food Items Grid -->
+        <div id="foodLibraryGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: PROGRESO & CICLO 4x4 ==================== -->
+    <section id="view-progreso" class="space-y-4 hidden animate-fade">
+      <!-- Biometric & Waist Check-in Card -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Monitoreo Quincenal (Protocolo Maestro)</span>
+            <h2 class="text-lg font-extrabold text-white">Control de Grasa Abdominal & Ciclo 4x4</h2>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" id="btnExportData" onclick="exportAppData()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition">
+              <i class="fa-solid fa-download mr-1 text-cyan-400"></i> Exportar JSON
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Biometric Log Inputs -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4 bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+          <div>
+            <label for="bioWeightInput" class="text-[11px] text-slate-400 font-bold block mb-1">Peso en Ayunas (kg)</label>
+            <input type="number" step="0.1" id="bioWeightInput" value="78.4" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-white">
+          </div>
+          <div>
+            <label for="bioWaistInput" class="text-[11px] text-slate-400 font-bold block mb-1">Cintura Umbilical (cm)</label>
+            <input type="number" step="0.1" id="bioWaistInput" value="83.5" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-white">
+          </div>
+          <div class="flex items-end">
+            <button type="button" id="btnSaveBiometrics" onclick="saveBiometricEntry()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs py-2.5 rounded-lg transition active:scale-95">
+              + Registrar Medición Hoy
+            </button>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Calorías por Día vs. Meta</h3>
+            <div class="relative h-60">
+              <canvas id="caloriesChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Tendencia Peso (kg) & Cintura (cm)</h3>
+            <div class="relative h-60">
+              <canvas id="biometricsChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Body Weight Auto-Calculator Card -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-calculator"></i> Calculadora Automática de Macros para 4º Turno
+        </h3>
+        <p class="text-xs text-slate-400 mb-3">
+          Calcula tus requerimientos exactos (2.2–2.4 g/kg de proteína) según tu peso actual y la fase del ciclo 4x4.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+          <div>
+            <label for="calcWeightInput" class="text-xs text-slate-300 font-semibold block mb-1">Tu Peso Corporal (kg)</label>
+            <input type="number" id="calcWeightInput" value="78" oninput="updateMacroCalculatorPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+          <div>
+            <label for="calcPhaseSelect" class="text-xs text-slate-300 font-semibold block mb-1">Fase del Ciclo 4x4</label>
+            <select id="calcPhaseSelect" onchange="updateMacroCalculatorPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+              <option value="noche">Día 2: Turno Nocturno (Déficit Controlado)</option>
+              <option value="saliente">Día 3: Saliente Recuperación (Déficit 15-20%)</option>
+              <option value="largo">Día 1: Turno Diurno (Mantenimiento / Entreno)</option>
+              <option value="libre">Día 4: Día Libre (Rendimiento / Recarga)</option>
+            </select>
+          </div>
+          <button type="button" id="btnApplyCalculatedMacros" onclick="applyCalculatedMacrosToCurrentDay()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs py-2.5 px-4 rounded-xl transition active:scale-95">
+            Aplicar a Este Día
+          </button>
+        </div>
+        <div id="calcPreviewOutput" class="mt-3 p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-2">
+          <span>Sugerencia Protocolo Maestro:</span>
+          <span class="font-extrabold text-amber-300" id="calcSuggestedText">1980 kcal | P: 185g | C: 165g | G: 60g</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- MODAL 1: METAS DIARIAS (SETTINGS) -->
+  <div id="modalGoals" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-700 animate-fade">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div>
+          <h3 class="text-base font-extrabold text-white">Metas Diarias (<span id="goalsModalDayLabel">Jueves 15</span>)</h3>
+          <p class="text-xs text-slate-400">Personaliza tus objetivos nutricionales del día activo</p>
+        </div>
+        <button type="button" id="btnCloseGoalsModal" onclick="closeGoalsModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label for="goalSubtitleInput" class="text-xs font-bold text-slate-300 block mb-1">Etiqueta / Turno del Día</label>
+          <input type="text" id="goalSubtitleInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="goalCalInput" class="text-xs font-bold text-cyan-400 block mb-1">Meta Calorías (kcal)</label>
+            <input type="number" id="goalCalInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+          <div>
+            <label for="goalProtInput" class="text-xs font-bold text-rose-400 block mb-1">Meta Proteína (g)</label>
+            <input type="number" id="goalProtInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+          <div>
+            <label for="goalCarbInput" class="text-xs font-bold text-amber-400 block mb-1">Meta Carbos (g)</label>
+            <input type="number" id="goalCarbInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+          <div>
+            <label for="goalFatInput" class="text-xs font-bold text-sky-400 block mb-1">Meta Grasas (g)</label>
+            <input type="number" id="goalFatInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 mt-5 pt-3 border-t border-slate-800">
+        <button type="button" id="btnResetDay" onclick="resetCurrentDayLogs()" class="px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-bold transition">
+          <i class="fa-solid fa-trash-can mr-1"></i> Borrar Día
+        </button>
+        <button type="button" id="btnSaveGoals" onclick="saveDailyGoals()" class="flex-1 py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs transition">
+          Guardar Metas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: INGRESO MANUAL DE COMIDA -->
+  <div id="modalManualFood" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-700 animate-fade">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white">Ingreso Manual de Comida</h3>
+        <button type="button" id="btnCloseManualModal" onclick="closeManualFoodModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label for="manualTimeInput" class="text-xs font-bold text-slate-300 block mb-1">Hora</label>
+            <input type="time" id="manualTimeInput" value="12:30" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div class="col-span-2">
+            <label for="manualNameInput" class="text-xs font-bold text-slate-300 block mb-1">Nombre</label>
+            <input type="text" id="manualNameInput" placeholder="Ej: Barra proteína / Tupper" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="manualCalInput" class="text-xs font-bold text-cyan-400 block mb-1">Calorías (kcal)</label>
+            <input type="number" id="manualCalInput" placeholder="200" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+          <div>
+            <label for="manualProtInput" class="text-xs font-bold text-rose-400 block mb-1">Proteína (g)</label>
+            <input type="number" id="manualProtInput" placeholder="20" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+          <div>
+            <label for="manualCarbInput" class="text-xs font-bold text-amber-400 block mb-1">Carbos (g)</label>
+            <input type="number" id="manualCarbInput" placeholder="15" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+          <div>
+            <label for="manualFatInput" class="text-xs font-bold text-sky-400 block mb-1">Grasas (g)</label>
+            <input type="number" id="manualFatInput" placeholder="6" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white">
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="btnSubmitManualFood" onclick="submitManualFood()" class="w-full mt-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-extrabold text-sm transition">
+        Agregar al Registro
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CREAR ALIMENTO PERSONALIZADO -->
+  <div id="modalCustomFood" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-700 animate-fade">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white">Nuevo Alimento para Biblioteca</h3>
+        <button type="button" id="btnCloseCustomFoodModal" onclick="closeCustomFoodModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label for="customFoodName" class="text-xs font-bold text-slate-300 block mb-1">Nombre del Alimento</label>
+          <input type="text" id="customFoodName" placeholder="Ej: Atún al agua lomitos" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="customFoodPortion" class="text-xs font-bold text-slate-300 block mb-1">Porción</label>
+            <input type="text" id="customFoodPortion" placeholder="Ej: 1 lata (120g)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label for="customFoodCategory" class="text-xs font-bold text-slate-300 block mb-1">Categoría</label>
+            <select id="customFoodCategory" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+              <option value="proteina">Proteínas</option>
+              <option value="carbo">Carbohidratos</option>
+              <option value="grasa">Grasas</option>
+              <option value="snack">Lácteos & Guardia</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="customFoodCal" class="text-xs font-bold text-cyan-400 block mb-1">Calorías (kcal)</label>
+            <input type="number" id="customFoodCal" placeholder="130" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label for="customFoodProt" class="text-xs font-bold text-rose-400 block mb-1">Proteína (g)</label>
+            <input type="number" id="customFoodProt" placeholder="28" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label for="customFoodCarb" class="text-xs font-bold text-amber-400 block mb-1">Carbos (g)</label>
+            <input type="number" id="customFoodCarb" placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label for="customFoodFat" class="text-xs font-bold text-sky-400 block mb-1">Grasas (g)</label>
+            <input type="number" id="customFoodFat" placeholder="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+          </div>
+        </div>
+      </div>
+      <button type="button" id="btnSaveCustomFood" onclick="saveCustomFood()" class="w-full mt-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-sm transition">
+        Guardar en Biblioteca
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 4: PRESETS DE FASE CICLO 4x4 -->
+  <div id="modalPhasePreset" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-700 animate-fade">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+        <div>
+          <h3 class="text-base font-extrabold text-white">Presets Ciclo 4x4 (Hospital)</h3>
+          <p class="text-xs text-slate-400">Aplica instantáneamente las metas del Protocolo Maestro al día actual</p>
+        </div>
+        <button type="button" id="btnClosePresetModal" onclick="closePhasePresetModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="space-y-2.5">
+        <button type="button" id="btnPresetLargo" onclick="applyShiftPreset('largo')" class="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-left transition flex items-center justify-between">
+          <div>
+            <div class="text-xs font-extrabold text-amber-400">Día 1: Turno Diurno (08:00 - 20:00)</div>
+            <div class="text-[11px] text-slate-300">Carbos en almuerzo y post-entreno • Corte café 15:00</div>
+          </div>
+          <span class="text-xs font-extrabold text-white">2350 kcal</span>
+        </button>
+        <button type="button" id="btnPresetNoche" onclick="applyShiftPreset('noche')" class="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-left transition flex items-center justify-between">
+          <div>
+            <div class="text-xs font-extrabold text-cyan-400">Día 2: Turno Nocturno (20:00 - 08:00)</div>
+            <div class="text-[11px] text-slate-300">Entreno 16:30 • Madrugada ligera • Corte café 02:30</div>
+          </div>
+          <span class="text-xs font-extrabold text-white">1980 kcal</span>
+        </button>
+        <button type="button" id="btnPresetSaliente" onclick="applyShiftPreset('saliente')" class="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-left transition flex items-center justify-between">
+          <div>
+            <div class="text-xs font-extrabold text-indigo-400">Día 3: Saliente / Recuperación</div>
+            <div class="text-[11px] text-slate-300">Déficit 15-20% • Cero café al salir • Siesta 5h</div>
+          </div>
+          <span class="text-xs font-extrabold text-white">1850 kcal</span>
+        </button>
+        <button type="button" id="btnPresetLibre" onclick="applyShiftPreset('libre')" class="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-left transition flex items-center justify-between">
+          <div>
+            <div class="text-xs font-extrabold text-emerald-400">Día 4: Día Libre / Rendimiento</div>
+            <div class="text-[11px] text-slate-300">Entreno matutino + Zona 2 • Recarga glucógeno</div>
+          </div>
+          <span class="text-xs font-extrabold text-white">2450 kcal</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastNotification" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toastMessage">Resumen copiado para pegarlo en el chat</span>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="glass-nav fixed bottom-0 inset-x-0 z-40 px-3 py-2">
+    <div class="max-w-3xl mx-auto grid grid-cols-4 gap-1">
+      <button type="button" id="nav-tracker" onclick="switchMainView('tracker')" class="bottom-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-cyan-400 bg-cyan-500/10 font-bold text-xs transition">
+        <i class="fa-solid fa-fire-flame-curved text-base mb-0.5"></i>
+        <span>Mi día</span>
+      </button>
+      <button type="button" id="nav-postturno" onclick="switchMainView('postturno')" class="bottom-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-xs transition">
+        <i class="fa-solid fa-moon text-base mb-0.5"></i>
+        <span>Post-Turno</span>
+      </button>
+      <button type="button" id="nav-alimentos" onclick="switchMainView('alimentos')" class="bottom-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-xs transition">
+        <i class="fa-solid fa-book-medical text-base mb-0.5"></i>
+        <span>Alimentos</span>
+      </button>
+      <button type="button" id="nav-progreso" onclick="switchMainView('progreso')" class="bottom-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-xs transition">
+        <i class="fa-solid fa-chart-line text-base mb-0.5"></i>
+        <span>Progreso</span>
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    // ==================== INITIAL DATA & STATE ====================
+    const STORAGE_KEY = 'macroturno_pro_v2_state';
+
+    const DEFAULT_FOODS = [
+      { id: 'f1', name: 'Pechuga de Pollo cocida', portion: '200g', cal: 330, p: 62, c: 0, g: 7, cat: 'proteina', keywords: ['pollo', 'pechuga'], baseGrams: 200 },
+      { id: 'f2', name: 'Arroz blanco cocido', portion: '180g', cal: 234, p: 5, c: 50, g: 1, cat: 'carbo', keywords: ['arroz'], baseGrams: 180 },
+      { id: 'f3', name: 'Papa cocida', portion: '200g', cal: 174, p: 4, c: 40, g: 0, cat: 'carbo', keywords: ['papa', 'papas'], baseGrams: 200 },
+      { id: 'f4', name: 'Huevo entero', portion: '3u', cal: 225, p: 20, c: 2, g: 15, cat: 'proteina', keywords: ['huevo', 'huevos'], baseUnits: 3 },
+      { id: 'f5', name: 'Marraqueta entera', portion: '1u', cal: 260, p: 9, c: 52, g: 2, cat: 'carbo', keywords: ['marraqueta', 'pan'], baseUnits: 1 },
+      { id: 'f6', name: 'Fajita chica / Rapidita', portion: '2u', cal: 164, p: 4, c: 28, g: 4, cat: 'carbo', keywords: ['fajita', 'fajitas', 'rapidita', 'rapiditas'], baseUnits: 2 },
+      { id: 'f7', name: 'Scoop Whey Protein', portion: '1u', cal: 120, p: 24, c: 3, g: 1, cat: 'snack', keywords: ['whey', 'scoop', 'proteina'], baseUnits: 1 },
+      { id: 'f8', name: 'Plátano mediano', portion: '1u', cal: 100, p: 1, c: 24, g: 0, cat: 'carbo', keywords: ['platano', 'plátano', 'banana'], baseUnits: 1 },
+      { id: 'f9', name: 'Yogur Proteico (Soprole/Lonco)', portion: '1u', cal: 110, p: 12, c: 7, g: 3, cat: 'snack', keywords: ['yogur', 'yogurt'], baseUnits: 1 },
+      { id: 'f10', name: 'Almendras / Nueces', portion: '10u', cal: 60, p: 2, c: 2, g: 5, cat: 'grasa', keywords: ['almendra', 'almendras', 'nueces'], baseUnits: 10 },
+      { id: 'f11', name: 'Palta Hass', portion: '40g', cal: 64, p: 1, c: 3, g: 6, cat: 'grasa', keywords: ['palta', 'aguacate'], baseGrams: 40 },
+      { id: 'f12', name: 'Aceite de oliva / Mayo (cdta)', portion: '1u', cal: 45, p: 0, c: 0, g: 5, cat: 'grasa', keywords: ['aceite', 'mayo', 'mayonesa'], baseUnits: 1 },
+      { id: 'f13', name: 'Posta / Carne magra cocida', portion: '200g', cal: 370, p: 56, c: 0, g: 14, cat: 'proteina', keywords: ['carne', 'posta', 'vacuno'], baseGrams: 200 },
+      { id: 'f14', name: 'Atún al agua drenado', portion: '1 lata (120g)', cal: 130, p: 28, c: 0, g: 1, cat: 'proteina', keywords: ['atun', 'atún'], baseUnits: 1 },
+      { id: 'f15', name: 'Avena tradicional', portion: '60g', cal: 228, p: 8, c: 40, g: 4, cat: 'carbo', keywords: ['avena'], baseGrams: 60 },
+      { id: 'f16', name: 'Quesillo / Queso Fresco', portion: '100g', cal: 135, p: 18, c: 3, g: 6, cat: 'proteina', keywords: ['quesillo', 'queso'], baseGrams: 100 }
+    ];
+
+    const PROTOCOL_GUIDES = {
+      saliente: [
+        {
+          time: '08:00 AM • Salida Hospital',
+          title: 'Bloqueo Fotónico + Cero Café al Salir',
+          desc: 'Ponte gafas oscuras al salir de guardia para frenar el tracto retinohipotalámico. Toma solo agua para no bloquear receptores de adenosina antes de tu siesta.',
+          macros: 'Hidratación + Gafas Oscuras',
+          mealData: null,
+          badgeColor: 'amber'
+        },
+        {
+          time: '09:00 AM • 485 kcal | 29g P',
+          title: '1. Desayuno Post-Guardia (Freno Catabólico)',
+          desc: '3 huevos revueltos + 1 marraqueta entera. Sacia sin pesadez gástrica y frena el cortisol post-turno antes de dormir.',
+          macros: '485 kcal | P: 29g | C: 54g | G: 17g',
+          mealData: { time: '09:00', name: 'Desayuno Post-Guardia: 3 huevos + 1 marraqueta', cal: 485, p: 29, c: 54, g: 17 },
+          badgeColor: 'cyan'
+        },
+        {
+          time: '09:30 – 14:45 PM • Descanso N3',
+          title: 'Siesta Larga Reparadora (5 horas)',
+          desc: 'Habitación con blackout total (17–19°C), antifaz y tapones. Considera 1–3 mg de Melatonina + 400 mg Bisglicinato de Magnesio.',
+          macros: 'Recuperación SNC',
+          mealData: null,
+          badgeColor: 'indigo'
+        },
+        {
+          time: '15:15 PM • 660 kcal | 68g P',
+          title: '2. Almuerzo al Despertar + Café + Creatina 5g',
+          desc: '200g pollo o posta magra + 200g arroz o papas + ensalada verde + 1 taza de café (única ventana permitida) + 5g creatina.',
+          macros: '660 kcal | P: 68g | C: 52g | G: 16g',
+          mealData: { time: '15:15', name: 'Almuerzo Saliente: 200g pollo/carne + 200g arroz/papa + ensalada + Creatina', cal: 660, p: 68, c: 52, g: 16 },
+          badgeColor: 'emerald'
+        },
+        {
+          time: '21:30 PM • 510 kcal | 69g P',
+          title: '3. Cena Reset Circadiano + Ashwagandha',
+          desc: '180g pollo o atún + 40g palta Hass + ensalada + 2 huevos duros. Baja carga glucémica para facilitar el sueño nocturno.',
+          macros: '510 kcal | P: 69g | C: 10g | G: 21g',
+          mealData: { time: '21:30', name: 'Cena Reset Circadiano: 180g pollo/atún + 40g palta + 2 huevos + ensalada', cal: 510, p: 69, c: 10, g: 21 },
+          badgeColor: 'purple'
+        }
+      ],
+      noche: [
+        {
+          time: '16:30 PM • Pre-Guardia',
+          title: 'Entrenamiento de Fuerza (RPE 8-9) + Post-Entreno',
+          desc: 'Entrena antes de entrar al turno nocturno. Al terminar: 1 scoop Whey + 1 plátano para reponer glucógeno muscular.',
+          macros: '220 kcal | P: 25g | C: 27g | G: 1g',
+          mealData: { time: '18:30', name: 'Post-Entreno: 1 scoop Whey en agua + 1 plátano', cal: 220, p: 25, c: 27, g: 1 },
+          badgeColor: 'cyan'
+        },
+        {
+          time: '23:00 PM • Cena Principal en Guardia',
+          title: 'Tupper Fuerte Pre-Madrugada',
+          desc: 'Última comida sólida con carbohidratos complejos antes del cierre metabólico nocturno (220g pollo + 180g arroz + brócoli).',
+          macros: '620 kcal | P: 71g | C: 50g | G: 12g',
+          mealData: { time: '23:10', name: 'Cena Turno: Tupper 220g pollo + 180g arroz + brócoli', cal: 620, p: 71, c: 50, g: 12 },
+          badgeColor: 'emerald'
+        },
+        {
+          time: '02:30 AM • Límite Estricto',
+          title: 'Corte Definitivo de Cafeína',
+          desc: 'Respeta 6 horas libres de estimulantes antes de las 08:30 AM para permitir que la adenosina induzca sueño profundo al llegar a casa.',
+          macros: '0 mg Cafeína post 02:30 AM',
+          mealData: null,
+          badgeColor: 'amber'
+        },
+        {
+          time: '03:30 AM • Rescate Metabólico',
+          title: 'Colación Líquida / Baja en Carbos',
+          desc: 'Durante la madrugada biológica baja la sensibilidad GLUT4. Usa 1 yogur proteico + 10 almendras para mantener saciedad sin pico de insulina.',
+          macros: '170 kcal | P: 14g | C: 9g | G: 8g',
+          mealData: { time: '03:30', name: 'Madrugada: 1 Yogur Proteico + 10 Almendras', cal: 170, p: 14, c: 9, g: 8 },
+          badgeColor: 'purple'
+        }
+      ],
+      largo: [
+        {
+          time: '07:15 AM • Pre-Hospital',
+          title: 'Desayuno Alto en Proteína',
+          desc: '3 huevos enteros + 2 fajitas chicas + café temprano. Energía estable para la mañana clínica en UPC/Urgencia.',
+          macros: '390 kcal | P: 24g | C: 31g | G: 19g',
+          mealData: { time: '07:15', name: 'Desayuno Turno Largo: 3 huevos + 2 fajitas chicas', cal: 390, p: 24, c: 31, g: 19 },
+          badgeColor: 'amber'
+        },
+        {
+          time: '13:30 PM • Almuerzo Hospital',
+          title: 'Almuerzo Principal + Carga de Carbos',
+          desc: '230g pechuga de pollo + 200g papa o arroz + ensalada. Sostiene el rendimiento cognitivo y físico de la tarde.',
+          macros: '585 kcal | P: 68g | C: 40g | G: 14g',
+          mealData: { time: '13:30', name: 'Almuerzo Turno Largo: 230g pollo + 200g papa + brócoli', cal: 585, p: 68, c: 40, g: 14 },
+          badgeColor: 'emerald'
+        },
+        {
+          time: '20:30 PM • Post-Turno Diurno',
+          title: 'Cena Recuperación + Magnesio (Cero Estimulantes)',
+          desc: '200g posta o pollo + 180g arroz + 40g palta. Si entrenas post-turno, usa 0 mg de cafeína para dormir antes de las 23:30.',
+          macros: '660 kcal | P: 68g | C: 53g | G: 18g',
+          mealData: { time: '21:00', name: 'Cena Post-Largo: 200g carne/pollo + 180g arroz + 40g palta', cal: 660, p: 68, c: 53, g: 18 },
+          badgeColor: 'cyan'
+        }
+      ],
+      libre: [
+        {
+          time: '09:00 AM • Mañana Óptima',
+          title: 'Desayuno Pre-Entreno Matutino',
+          desc: '3 huevos + 60g avena con 1 scoop Whey o 1 marraqueta. Aprovecha el pico natural de testosterona y sensibilidad a la insulina.',
+          macros: '570 kcal | P: 48g | C: 55g | G: 18g',
+          mealData: { time: '09:00', name: 'Desayuno Día Libre: 3 huevos + 60g avena + 1 scoop Whey', cal: 570, p: 48, c: 55, g: 18 },
+          badgeColor: 'emerald'
+        },
+        {
+          time: '11:00 AM • Fuerza + Oxidación',
+          title: 'Sesión Pesada (RPE 8-9) + 25 min Cardio Zona 2',
+          desc: 'Prioriza básicos multiarticulares y cierra con 25 min al 65% FC máx para oxidar grasa visceral sin fatigar el SNC.',
+          macros: 'Meta: 10.000+ pasos NEAT',
+          mealData: null,
+          badgeColor: 'cyan'
+        },
+        {
+          time: '14:00 PM • Recarga de Glucógeno',
+          title: 'Almuerzo Alto en Carbohidratos Limpios',
+          desc: '220g pollo o posta + 250g arroz o papas + 40g palta + Creatina 5g.',
+          macros: '710 kcal | P: 69g | C: 68g | G: 16g',
+          mealData: { time: '14:00', name: 'Almuerzo Día Libre: 220g pollo + 250g arroz + 40g palta', cal: 710, p: 69, c: 68, g: 16 },
+          badgeColor: 'amber'
+        }
+      ]
+    };
+
+    const DEFAULT_STATE = {
+      activeDayId: 'jueves15',
+      portionMultiplier: 1,
+      selectedFoodCat: 'all',
+      activeProtocolTab: 'saliente',
+      days: {
+        jueves15: {
+          id: 'jueves15',
+          tabLabel: 'Jueves 15',
+          badge: 'En Turno Noche',
+          subtitle: 'Jueves 15 • Entreno Lower + Turno Noche (20:00–08:00)',
+          coffeeCutoff: 'Corte café: 02:30 AM',
+          targets: { cal: 1980, p: 185, c: 165, g: 60 },
+          water: 1.50,
+          caffeine: 100,
+          steps: 8500,
+          supplements: { creatine: true, magnesium: false, ashwagandha: false, melatonin: false },
+          meals: [
+            { id: 'm1', time: '11:00', name: 'Desayuno: 3 huevos + 2 fajitas chicas', cal: 390, p: 24, c: 31, g: 19 },
+            { id: 'm2', time: '13:25', name: 'Almuerzo: 230g pollo + 200g papa + brócoli + mayo', cal: 585, p: 68, c: 40, g: 14 },
+            { id: 'm3', time: '18:30', name: 'Post-Entreno: 1 scoop Whey en agua + 1 plátano', cal: 220, p: 25, c: 27, g: 1 },
+            { id: 'm4', time: '23:10', name: 'Cena Turno: Tupper 220g pollo + 180g arroz + brócoli', cal: 620, p: 71, c: 50, g: 12 }
+          ]
+        },
+        viernes16: {
+          id: 'viernes16',
+          tabLabel: 'Viernes 16 (Saliente)',
+          badge: 'Saliente Guardia',
+          subtitle: 'Viernes 16 • Saliente de Noche + Siesta 5h + Déficit Controlado',
+          coffeeCutoff: 'Corte café: 15:30 PM',
+          targets: { cal: 1850, p: 185, c: 140, g: 60 },
+          water: 0.50,
+          caffeine: 0,
+          steps: 6000,
+          supplements: { creatine: false, magnesium: false, ashwagandha: false, melatonin: false },
+          meals: []
+        },
+        sabado17: {
+          id: 'sabado17',
+          tabLabel: 'Sábado 17 (Libre)',
+          badge: 'Día Libre • Reset',
+          subtitle: 'Sábado 17 • Consulta Particular AM + Entreno Fuerza + Zona 2',
+          coffeeCutoff: 'Corte café: 15:00 PM',
+          targets: { cal: 2350, p: 185, c: 240, g: 68 },
+          water: 0.0,
+          caffeine: 0,
+          steps: 10000,
+          supplements: { creatine: false, magnesium: false, ashwagandha: false, melatonin: false },
+          meals: []
+        },
+        domingo18: {
+          id: 'domingo18',
+          tabLabel: 'Domingo 18 (Largo)',
+          badge: 'Turno Diurno',
+          subtitle: 'Domingo 18 • Turno Largo Hospital (08:00–20:00)',
+          coffeeCutoff: 'Corte café: 15:00 PM',
+          targets: { cal: 2250, p: 185, c: 215, g: 65 },
+          water: 0.0,
+          caffeine: 0,
+          steps: 9500,
+          supplements: { creatine: false, magnesium: false, ashwagandha: false, melatonin: false },
+          meals: []
+        }
+      },
+      foods: DEFAULT_FOODS,
+      biometrics: [
+        { date: '01 Oct', weight: 79.4, waist: 85.0 },
+        { date: '05 Oct', weight: 79.0, waist: 84.5 },
+        { date: '10 Oct', weight: 78.7, waist: 84.0 },
+        { date: '15 Oct', weight: 78.4, waist: 83.5 }
+      ]
+    };
+
+    let appState = loadState();
+    let caloriesChartInstance = null;
+    let biometricsChartInstance = null;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+        const parsed = JSON.parse(raw);
+        if (!parsed.days || !parsed.days.jueves15) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+        return parsed;
+      } catch (e) {
+        return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        // Ignore storage errors in restricted iframes
+      }
+    }
+
+    function getActiveDay() {
+      return appState.days[appState.activeDayId] || appState.days.jueves15;
+    }
+
+    function getTotalsForDay(day) {
+      return day.meals.reduce(
+        (acc, item) => {
+          acc.cal += Number(item.cal) || 0;
+          acc.p += Number(item.p) || 0;
+          acc.c += Number(item.c) || 0;
+          acc.g += Number(item.g) || 0;
+          return acc;
+        },
+        { cal: 0, p: 0, c: 0, g: 0 }
+      );
+    }
+
+    // ==================== UI RENDERING ====================
+    function renderAll() {
+      renderHeaderAndDayTabs();
+      renderTrackerDashboard();
+      renderMealsList();
+      renderProtocolGuide();
+      renderFoodLibrary();
+      updateMacroCalculatorPreview();
+    }
+
+    function renderHeaderAndDayTabs() {
+      const day = getActiveDay();
+      document.getElementById('headerShiftBadge').textContent = day.badge;
+      document.getElementById('headerSubtitle').textContent = day.subtitle;
+      document.getElementById('coffeeCutoffBadge').innerHTML = `<i class="fa-solid fa-mug-hot"></i> ${day.coffeeCutoff}`;
+
+      const container = document.getElementById('dayTabsContainer');
+      container.innerHTML = '';
+
+      Object.values(appState.days).forEach((d) => {
+        const isActive = d.id === appState.activeDayId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = isActive
+          ? 'px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 whitespace-nowrap transition flex items-center gap-1.5'
+          : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900/90 text-slate-400 hover:text-white border border-slate-800 whitespace-nowrap transition flex items-center gap-1.5';
+        btn.innerHTML = `<span>${d.tabLabel}</span> <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-slate-950/25 text-slate-950' : 'bg-slate-800 text-slate-400'}">${d.meals.length}</span>`;
+        btn.addEventListener('click', () => {
+          appState.activeDayId = d.id;
+          saveState();
+          renderAll();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function renderTrackerDashboard() {
+      const day = getActiveDay();
+      const totals = getTotalsForDay(day);
+      const t = day.targets;
+
+      const remCal = t.cal - totals.cal;
+      const calPct = Math.min(100, Math.round((totals.cal / Math.max(1, t.cal)) * 100));
+
+      document.getElementById('calCurrent').textContent = totals.cal;
+      document.getElementById('calTarget').textContent = t.cal;
+
+      const remEl = document.getElementById('calRemaining');
+      if (remCal >= 0) {
+        remEl.textContent = `${remCal} kcal`;
+        remEl.className = 'text-lg sm:text-xl font-extrabold text-emerald-400';
+      } else {
+        remEl.textContent = `+${Math.abs(remCal)} kcal (Exceso)`;
+        remEl.className = 'text-lg sm:text-xl font-extrabold text-rose-400';
+      }
+
+      const calBar = document.getElementById('calProgressBar');
+      calBar.style.width = `${calPct}%`;
+      calBar.className = remCal >= 0
+        ? 'progress-ring h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full'
+        : 'progress-ring h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-full';
+
+      // Macros
+      updateMacroCard('prot', totals.p, t.p);
+      updateMacroCard('carb', totals.c, t.c);
+      updateMacroCard('fat', totals.g, t.g);
+
+      // Supplements
+      const supps = day.supplements || { creatine: false, magnesium: false, ashwagandha: false, melatonin: false };
+      const suppKeys = [
+        { key: 'creatine', btn: 'btnSuppCreatine', icon: 'iconSuppCreatine' },
+        { key: 'magnesium', btn: 'btnSuppMagnesium', icon: 'iconSuppMagnesium' },
+        { key: 'ashwagandha', btn: 'btnSuppAshwa', icon: 'iconSuppAshwa' },
+        { key: 'melatonin', btn: 'btnSuppMelatonin', icon: 'iconSuppMelatonin' }
+      ];
+      let takenCount = 0;
+      suppKeys.forEach((s) => {
+        const active = !!supps[s.key];
+        if (active) takenCount++;
+        const btnEl = document.getElementById(s.btn);
+        const iconEl = document.getElementById(s.icon);
+        if (active) {
+          btnEl.className = 'flex items-center gap-2 p-2 rounded-xl border text-left transition text-xs font-medium bg-emerald-500/15 border-emerald-500/40 text-emerald-200';
+          iconEl.className = 'w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-emerald-500 text-slate-950 font-extrabold flex-shrink-0';
+          iconEl.textContent = '✓';
+        } else {
+          btnEl.className = 'flex items-center gap-2 p-2 rounded-xl border text-left transition text-xs font-medium bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200';
+          iconEl.className = 'w-5 h-5 rounded-full flex items-center justify-center text-[10px] border border-slate-600 flex-shrink-0';
+          iconEl.textContent = '';
+        }
+      });
+      document.getElementById('suppCountBadge').textContent = `${takenCount}/4 tomados`;
+
+      // Water, Caffeine, Steps
+      document.getElementById('waterDisplay').textContent = Number(day.water || 0).toFixed(2);
+      document.getElementById('caffeineDisplay').textContent = day.caffeine || 0;
+      document.getElementById('stepsDisplay').textContent = Number(day.steps || 0).toLocaleString('es-CL');
+    }
+
+    function updateMacroCard(prefix, current, target) {
+      const pct = Math.min(100, Math.round((current / Math.max(1, target)) * 100));
+      const rem = target - current;
+      document.getElementById(`${prefix}Current`).textContent = current;
+      document.getElementById(`${prefix}Target`).textContent = target;
+      document.getElementById(`${prefix}Bar`).style.width = `${pct}%`;
+
+      const checkEl = document.getElementById(`${prefix}Check`);
+      const subEl = document.getElementById(`${prefix}Sub`);
+      if (current >= target) {
+        checkEl.classList.remove('hidden');
+        subEl.textContent = `Meta lograda (+${Math.abs(rem)}g)`;
+        subEl.className = 'text-[10px] text-emerald-400 font-semibold mt-1';
+      } else {
+        checkEl.classList.add('hidden');
+        subEl.textContent = `Restan: ${rem}g`;
+        subEl.className = 'text-[10px] text-slate-400 mt-1';
+      }
+    }
+
+    function renderMealsList() {
+      const day = getActiveDay();
+      const container = document.getElementById('mealsListContainer');
+      document.getElementById('mealCountBadge').textContent = `${day.meals.length} ${day.meals.length === 1 ? 'comida' : 'comidas'}`;
+
+      if (day.meals.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 px-4 rounded-xl bg-slate-900/50 border border-dashed border-slate-800">
+            <i class="fa-solid fa-utensils text-slate-600 text-2xl mb-2"></i>
+            <p class="text-xs text-slate-400 font-medium">Aún no hay comidas registradas en <strong>${day.tabLabel}</strong>.</p>
+            <p class="text-[11px] text-slate-500 mt-1">Usa los atajos de 1 toque, escribe natural o carga la estrategia desde la pestaña Post-Turno.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      day.meals.forEach((meal) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/90 border border-slate-800/90 hover:border-slate-700 transition';
+        row.innerHTML = `
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-bold text-[11px]">${meal.time}</span>
+              <span class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(meal.name)}</span>
+            </div>
+            <div class="text-xs text-slate-400 mt-1 font-medium">
+              <span class="text-cyan-300 font-bold">${meal.cal} kcal</span>
+              <span class="mx-1.5 text-slate-600">|</span>
+              <span class="text-rose-300">P: ${meal.p}g</span> •
+              <span class="text-amber-300">C: ${meal.c}g</span> •
+              <span class="text-sky-300">G: ${meal.g}g</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button type="button" title="Duplicar comida" class="dup-meal-btn w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-cyan-300 flex items-center justify-center text-xs transition">
+              <i class="fa-regular fa-clone"></i>
+            </button>
+            <button type="button" title="Eliminar comida" class="del-meal-btn w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center text-xs transition">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+
+        row.querySelector('.dup-meal-btn').addEventListener('click', () => {
+          duplicateMeal(meal.id);
+        });
+        row.querySelector('.del-meal-btn').addEventListener('click', () => {
+          deleteMeal(meal.id);
+        });
+
+        container.appendChild(row);
+      });
+    }
+
+    // ==================== NATURAL LANGUAGE PARSER ====================
+    function parseNaturalFoodString(text) {
+      if (!text || !text.trim()) return null;
+      const clean = text.toLowerCase().trim();
+
+      let totalCal = 0, totalP = 0, totalC = 0, totalG = 0;
+      let matchedItems = [];
+
+      // Check each food in library for keyword matches
+      appState.foods.forEach((food) => {
+        const kws = food.keywords || [food.name.toLowerCase().split(' ')[0]];
+        for (const kw of kws) {
+          const regex = new RegExp(`(?:(\\d+(?:[.,]\\d+)?)\\s*(g|gr|gramos|u|un|unidades|scoop|scoops|lata|cdta)?\\s*(?:de\\s+)?)?\\b${kw}\\b`, 'i');
+          const match = clean.match(regex);
+          if (match) {
+            let qty = match[1] ? parseFloat(match[1].replace(',', '.')) : null;
+            let unit = (match[2] || '').toLowerCase();
+            let factor = 1;
+
+            if (qty !== null) {
+              if (unit.startsWith('g') || (!unit && qty >= 25)) {
+                const baseG = food.baseGrams || 100;
+                factor = qty / baseG;
+              } else {
+                const baseU = food.baseUnits || 1;
+                factor = qty / baseU;
+              }
+            }
+
+            totalCal += Math.round(food.cal * factor);
+            totalP += Math.round(food.p * factor);
+            totalC += Math.round(food.c * factor);
+            totalG += Math.round(food.g * factor);
+            matchedItems.push(food.name);
+            break;
+          }
+        }
+      });
+
+      // Fallback if user wrote raw numbers like "barra 210 kcal 20p"
+      if (matchedItems.length === 0) {
+        const calMatch = clean.match(/(\d+)\s*kcal/i);
+        const pMatch = clean.match(/(\d+)\s*(?:g\s*)?p(?:rot)?/i);
+        if (calMatch || pMatch) {
+          totalCal = calMatch ? parseInt(calMatch[1], 10) : 200;
+          totalP = pMatch ? parseInt(pMatch[1], 10) : 15;
+          totalC = 15;
+          totalG = 6;
+          matchedItems.push('Personalizado');
+        } else {
+          // Intelligent estimation for generic meal text
+          totalCal = 250;
+          totalP = 20;
+          totalC = 22;
+          totalG = 8;
+        }
+      }
+
+      return {
+        name: text.trim(),
+        cal: totalCal,
+        p: totalP,
+        c: totalC,
+        g: totalG,
+        matchedCount: matchedItems.length
+      };
+    }
+
+    function updateLiveNaturalPreview() {
+      const input = document.getElementById('naturalFoodInput').value;
+      const box = document.getElementById('naturalPreviewBox');
+      if (!input.trim()) {
+        box.classList.add('hidden');
+        return;
+      }
+      const parsed = parseNaturalFoodString(input);
+      if (!parsed) {
+        box.classList.add('hidden');
+        return;
+      }
+      box.classList.remove('hidden');
+      document.getElementById('naturalPreviewText').textContent =
+        parsed.matchedCount > 0 ? `Detectado (${parsed.matchedCount} ítems):` : 'Estimación rápida:';
+      document.getElementById('naturalPreviewMacros').textContent =
+        `${parsed.cal} kcal | P: ${parsed.p}g | C: ${parsed.c}g | G: ${parsed.g}g`;
+    }
+
+    function registerNaturalFood() {
+      const inputEl = document.getElementById('naturalFoodInput');
+      const timeEl = document.getElementById('mealTimeInput');
+      const text = inputEl.value.trim();
+      if (!text) {
+        showToast('Escribe qué comiste o usa un atajo de 1 toque');
+        return;
+      }
+      const parsed = parseNaturalFoodString(text);
+      const day = getActiveDay();
+      day.meals.push({
+        id: 'm_' + Date.now(),
+        time: timeEl.value || '12:00',
+        name: parsed.name,
+        cal: parsed.cal,
+        p: parsed.p,
+        c: parsed.c,
+        g: parsed.g
+      });
+      inputEl.value = '';
+      document.getElementById('naturalPreviewBox').classList.add('hidden');
+      saveState();
+      renderAll();
+      showToast(`Registrado: ${parsed.cal} kcal (${parsed.p}g P)`);
+    }
+
+    function quickLogMeal(name, cal, p, c, g, customTime) {
+      const day = getActiveDay();
+      const timeVal = customTime || document.getElementById('mealTimeInput').value || '03:15';
+      day.meals.push({
+        id: 'm_' + Date.now() + Math.random().toString(36).slice(2, 5),
+        time: timeVal,
+        name,
+        cal,
+        p,
+        c,
+        g
+      });
+      saveState();
+      renderAll();
+      showToast(`Agregado: ${name} (${cal} kcal)`);
+    }
+
+    function deleteMeal(mealId) {
+      const day = getActiveDay();
+      day.meals = day.meals.filter((m) => m.id !== mealId);
+      saveState();
+      renderAll();
+      showToast('Comida eliminada del registro');
+    }
+
+    function duplicateMeal(mealId) {
+      const day = getActiveDay();
+      const orig = day.meals.find((m) => m.id === mealId);
+      if (!orig) return;
+      day.meals.push({
+        ...orig,
+        id: 'm_' + Date.now()
+      });
+      saveState();
+      renderAll();
+      showToast(`Duplicado: ${orig.name}`);
+    }
+
+    // ==================== BIO-TRACKERS ====================
+    function toggleSupplement(key) {
+      const day = getActiveDay();
+      if (!day.supplements) {
+        day.supplements = { creatine: false, magnesium: false, ashwagandha: false, melatonin: false };
+      }
+      day.supplements[key] = !day.supplements[key];
+      saveState();
+      renderTrackerDashboard();
+    }
+
+    function adjustWater(delta) {
+      const day = getActiveDay();
+      day.water = Math.max(0, Math.round(((day.water || 0) + delta) * 100) / 100);
+      saveState();
+      renderTrackerDashboard();
+    }
+
+    function adjustCaffeine(delta) {
+      const day = getActiveDay();
+      day.caffeine = Math.max(0, (day.caffeine || 0) + delta);
+      saveState();
+      renderTrackerDashboard();
+    }
+
+    function adjustSteps(delta) {
+      const day = getActiveDay();
+      day.steps = Math.max(0, (day.steps || 0) + delta);
+      saveState();
+      renderTrackerDashboard();
+    }
+
+    // ==================== PROTOCOL VIEW ====================
+    function switchProtocolGuide(phase) {
+      appState.activeProtocolTab = phase;
+      saveState();
+      renderProtocolGuide();
+    }
+
+    function renderProtocolGuide() {
+      const activePhase = appState.activeProtocolTab || 'saliente';
+      ['saliente', 'noche', 'largo', 'libre'].forEach((p) => {
+        const btn = document.getElementById(`protoTab-${p}`);
+        if (!btn) return;
+        if (p === activePhase) {
+          btn.className = 'proto-tab-btn px-3 py-2 rounded-xl text-xs font-bold border transition text-left bg-indigo-600/25 border-indigo-500 text-white';
+        } else {
+          btn.className = 'proto-tab-btn px-3 py-2 rounded-xl text-xs font-bold border transition text-left bg-slate-900 border-slate-800 text-slate-400 hover:text-white';
+        }
+      });
+
+      const cards = PROTOCOL_GUIDES[activePhase] || PROTOCOL_GUIDES.saliente;
+      const container = document.getElementById('protocolCardsContainer');
+      container.innerHTML = '';
+
+      cards.forEach((card, idx) => {
+        const div = document.createElement('div');
+        div.className = 'p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
+        div.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-400 text-[11px] font-bold">${card.time}</span>
+              <span class="text-[11px] font-bold text-slate-400">${card.macros}</span>
+            </div>
+            <h4 class="text-sm font-extrabold text-white">${card.title}</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">${card.desc}</p>
+          </div>
+          ${card.mealData ? `
+            <div class="flex sm:flex-col gap-1.5 flex-shrink-0">
+              <button type="button" class="load-active-btn px-3 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-bold whitespace-nowrap transition">
+                + Cargar en Día Activo
+              </button>
+              <button type="button" class="load-viernes-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold whitespace-nowrap transition">
+                + Cargar en Viernes 16
+              </button>
+            </div>
+          ` : ''}
+        `;
+
+        if (card.mealData) {
+          div.querySelector('.load-active-btn').addEventListener('click', () => {
+            const day = getActiveDay();
+            day.meals.push({ id: 'm_' + Date.now() + idx, ...card.mealData });
+            saveState();
+            renderAll();
+            showToast(`Cargado en ${day.tabLabel}: ${card.mealData.name}`);
+          });
+          div.querySelector('.load-viernes-btn').addEventListener('click', () => {
+            appState.days.viernes16.meals.push({ id: 'm_' + Date.now() + idx, ...card.mealData });
+            appState.activeDayId = 'viernes16';
+            saveState();
+            renderAll();
+            showToast('Cargado en Viernes 16 (Saliente)');
+          });
+        }
+        container.appendChild(div);
+      });
+    }
+
+    function loadAllSalienteMeals() {
+      const salienteCards = PROTOCOL_GUIDES.saliente.filter((c) => c.mealData);
+      salienteCards.forEach((c, idx) => {
+        appState.days.viernes16.meals.push({
+          id: 'm_sal_' + Date.now() + '_' + idx,
+          ...c.mealData
+        });
+      });
+      appState.days.viernes16.supplements.creatine = true;
+      appState.activeDayId = 'viernes16';
+      saveState();
+      renderAll();
+      switchMainView('tracker');
+      showToast('Protocolo Saliente completo cargado en Viernes 16 (1.655 kcal | 166g P)');
+    }
+
+    // ==================== FOOD LIBRARY ====================
+    function setPortionMultiplier(mult) {
+      appState.portionMultiplier = mult;
+      [0.5, 1, 1.5, 2].forEach((m) => {
+        const btn = document.getElementById(`mult-${m}`);
+        if (!btn) return;
+        btn.className = m === mult
+          ? 'mult-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-500 text-slate-950 transition'
+          : 'mult-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+      });
+      renderFoodLibrary();
+    }
+
+    function setFoodCategory(cat) {
+      appState.selectedFoodCat = cat;
+      ['all', 'proteina', 'carbo', 'grasa', 'snack'].forEach((c) => {
+        const btn = document.getElementById(`cat-${c}`);
+        if (!btn) return;
+        btn.className = c === cat
+          ? 'cat-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-950'
+          : 'cat-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300';
+      });
+      renderFoodLibrary();
+    }
+
+    function renderFoodLibrary() {
+      const query = (document.getElementById('foodSearchInput')?.value || '').toLowerCase().trim();
+      const mult = appState.portionMultiplier || 1;
+      const cat = appState.selectedFoodCat || 'all';
+      const grid = document.getElementById('foodLibraryGrid');
+      grid.innerHTML = '';
+
+      const filtered = appState.foods.filter((f) => {
+        const matchesCat = cat === 'all' || f.cat === cat;
+        const matchesQuery = !query || f.name.toLowerCase().includes(query) || f.portion.toLowerCase().includes(query);
+        return matchesCat && matchesQuery;
+      });
+
+      filtered.forEach((food) => {
+        const cal = Math.round(food.cal * mult);
+        const p = Math.round(food.p * mult);
+        const c = Math.round(food.c * mult);
+        const g = Math.round(food.g * mult);
+        const portionLabel = mult === 1 ? food.portion : `${mult}x (${food.portion})`;
+
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 flex items-center justify-between gap-2 transition';
+        card.innerHTML = `
+          <div class="min-w-0">
+            <div class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(food.name)}</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              <span class="text-cyan-400 font-bold">${portionLabel}</span> •
+              <span class="text-white font-semibold">${cal} kcal</span> |
+              <span class="text-rose-400 font-semibold">${p}g P</span> |
+              C: ${c}g | G: ${g}g
+            </div>
+          </div>
+          <button type="button" class="add-lib-food-btn px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 border border-cyan-500/30 font-extrabold text-xs transition active:scale-95 flex-shrink-0">
+            + Agregar
+          </button>
+        `;
+        card.querySelector('.add-lib-food-btn').addEventListener('click', () => {
+          const now = new Date();
+          const hh = String(now.getHours()).padStart(2, '0');
+          const mm = String(now.getMinutes()).padStart(2, '0');
+          quickLogMeal(`${food.name} (${portionLabel})`, cal, p, c, g, `${hh}:${mm}`);
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    // ==================== MODALS & SETTINGS ====================
+    function openGoalsModal() {
+      const day = getActiveDay();
+      document.getElementById('goalsModalDayLabel').textContent = day.tabLabel;
+      document.getElementById('goalSubtitleInput').value = day.subtitle;
+      document.getElementById('goalCalInput').value = day.targets.cal;
+      document.getElementById('goalProtInput').value = day.targets.p;
+      document.getElementById('goalCarbInput').value = day.targets.c;
+      document.getElementById('goalFatInput').value = day.targets.g;
+
+      const modal = document.getElementById('modalGoals');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeGoalsModal() {
+      const modal = document.getElementById('modalGoals');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveDailyGoals() {
+      const day = getActiveDay();
+      day.subtitle = document.getElementById('goalSubtitleInput').value.trim() || day.subtitle;
+      day.targets.cal = parseInt(document.getElementById('goalCalInput').value, 10) || 1980;
+      day.targets.p = parseInt(document.getElementById('goalProtInput').value, 10) || 185;
+      day.targets.c = parseInt(document.getElementById('goalCarbInput').value, 10) || 165;
+      day.targets.g = parseInt(document.getElementById('goalFatInput').value, 10) || 60;
+      saveState();
+      closeGoalsModal();
+      renderAll();
+      showToast('Metas diarias actualizadas');
+    }
+
+    function resetCurrentDayLogs() {
+      const day = getActiveDay();
+      day.meals = [];
+      day.water = 0;
+      day.caffeine = 0;
+      saveState();
+      closeGoalsModal();
+      renderAll();
+      showToast(`Registro de ${day.tabLabel} reiniciado`);
+    }
+
+    function openManualFoodModal() {
+      const modal = document.getElementById('modalManualFood');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeManualFoodModal() {
+      const modal = document.getElementById('modalManualFood');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function submitManualFood() {
+      const time = document.getElementById('manualTimeInput').value || '12:30';
+      const name = document.getElementById('manualNameInput').value.trim() || 'Comida Manual';
+      const cal = parseInt(document.getElementById('manualCalInput').value, 10) || 0;
+      const p = parseInt(document.getElementById('manualProtInput').value, 10) || 0;
+      const c = parseInt(document.getElementById('manualCarbInput').value, 10) || 0;
+      const g = parseInt(document.getElementById('manualFatInput').value, 10) || 0;
+
+      quickLogMeal(name, cal, p, c, g, time);
+      document.getElementById('manualNameInput').value = '';
+      document.getElementById('manualCalInput').value = '';
+      document.getElementById('manualProtInput').value = '';
+      document.getElementById('manualCarbInput').value = '';
+      document.getElementById('manualFatInput').value = '';
+      closeManualFoodModal();
+    }
+
+    function openCustomFoodModal() {
+      const modal = document.getElementById('modalCustomFood');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeCustomFoodModal() {
+      const modal = document.getElementById('modalCustomFood');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveCustomFood() {
+      const name = document.getElementById('customFoodName').value.trim();
+      if (!name) {
+        showToast('Ingresa un nombre para el alimento');
+        return;
+      }
+      const portion = document.getElementById('customFoodPortion').value.trim() || '1 porción';
+      const cat = document.getElementById('customFoodCategory').value || 'proteina';
+      const cal = parseInt(document.getElementById('customFoodCal').value, 10) || 100;
+      const p = parseInt(document.getElementById('customFoodProt').value, 10) || 10;
+      const c = parseInt(document.getElementById('customFoodCarb').value, 10) || 10;
+      const g = parseInt(document.getElementById('customFoodFat').value, 10) || 5;
+
+      appState.foods.unshift({
+        id: 'f_custom_' + Date.now(),
+        name,
+        portion,
+        cal,
+        p,
+        c,
+        g,
+        cat,
+        keywords: [name.toLowerCase().split(' ')[0]]
+      });
+      saveState();
+      closeCustomFoodModal();
+      renderFoodLibrary();
+      showToast(`Alimento "${name}" guardado en tu biblioteca`);
+    }
+
+    function openPhasePresetModal() {
+      const modal = document.getElementById('modalPhasePreset');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePhasePresetModal() {
+      const modal = document.getElementById('modalPhasePreset');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function applyShiftPreset(phase) {
+      const day = getActiveDay();
+      if (phase === 'largo') {
+        day.badge = 'Turno Diurno';
+        day.coffeeCutoff = 'Corte café: 15:00 PM';
+        day.targets = { cal: 2350, p: 185, c: 230, g: 65 };
+      } else if (phase === 'noche') {
+        day.badge = 'En Turno Noche';
+        day.coffeeCutoff = 'Corte café: 02:30 AM';
+        day.targets = { cal: 1980, p: 185, c: 165, g: 60 };
+      } else if (phase === 'saliente') {
+        day.badge = 'Saliente Guardia';
+        day.coffeeCutoff = 'Corte café: 15:30 PM';
+        day.targets = { cal: 1850, p: 185, c: 140, g: 60 };
+      } else if (phase === 'libre') {
+        day.badge = 'Día Libre • Reset';
+        day.coffeeCutoff = 'Corte café: 15:00 PM';
+        day.targets = { cal: 2450, p: 185, c: 255, g: 70 };
+      }
+      saveState();
+      closePhasePresetModal();
+      renderAll();
+      showToast(`Preset ${day.badge} aplicado a ${day.tabLabel}`);
+    }
+
+    // ==================== MACRO CALCULATOR & CHARTS ====================
+    function getCalculatedMacros(weight, phase) {
+      const w = Math.max(45, Math.min(150, Number(weight) || 78));
+      const prot = Math.round(w * 2.35);
+      let cal = 2200, fat = Math.round(w * 0.8);
+      if (phase === 'noche') {
+        cal = Math.round(w * 25.5);
+      } else if (phase === 'saliente') {
+        cal = Math.round(w * 23.8);
+      } else if (phase === 'largo') {
+        cal = Math.round(w * 30.0);
+      } else {
+        cal = Math.round(w * 31.5);
+      }
+      const carb = Math.max(80, Math.round((cal - prot * 4 - fat * 9) / 4));
+      return { cal, p: prot, c: carb, g: fat };
+    }
+
+    function updateMacroCalculatorPreview() {
+      const w = document.getElementById('calcWeightInput')?.value || 78;
+      const phase = document.getElementById('calcPhaseSelect')?.value || 'noche';
+      const res = getCalculatedMacros(w, phase);
+      const el = document.getElementById('calcSuggestedText');
+      if (el) {
+        el.textContent = `${res.cal} kcal | P: ${res.p}g | C: ${res.c}g | G: ${res.g}g`;
+      }
+    }
+
+    function applyCalculatedMacrosToCurrentDay() {
+      const w = document.getElementById('calcWeightInput')?.value || 78;
+      const phase = document.getElementById('calcPhaseSelect')?.value || 'noche';
+      const res = getCalculatedMacros(w, phase);
+      const day = getActiveDay();
+      day.targets = res;
+      saveState();
+      renderAll();
+      showToast(`Metas actualizadas en ${day.tabLabel}: ${res.cal} kcal | ${res.p}g P`);
+    }
+
+    function saveBiometricEntry() {
+      const weight = parseFloat(document.getElementById('bioWeightInput').value) || 78.4;
+      const waist = parseFloat(document.getElementById('bioWaistInput').value) || 83.5;
+      const now = new Date();
+      const label = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}`;
+      appState.biometrics.push({ date: label, weight, waist });
+      saveState();
+      renderCharts();
+      showToast(`Medición registrada: ${weight} kg | ${waist} cm cintura`);
+    }
+
+    function renderCharts() {
+      if (typeof Chart === 'undefined') return;
+
+      // Chart 1: Calories per day vs Target
+      const ctx1 = document.getElementById('caloriesChart');
+      if (ctx1) {
+        const daysArr = Object.values(appState.days);
+        const labels = daysArr.map((d) => d.tabLabel.split(' ')[0]);
+        const consumed = daysArr.map((d) => getTotalsForDay(d).cal);
+        const targets = daysArr.map((d) => d.targets.cal);
+
+        if (caloriesChartInstance) caloriesChartInstance.destroy();
+        caloriesChartInstance = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Consumido (kcal)',
+                data: consumed,
+                backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                borderRadius: 6
+              },
+              {
+                label: 'Meta (kcal)',
+                data: targets,
+                backgroundColor: 'rgba(148, 163, 184, 0.25)',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+            },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+              y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.4)' } }
+            }
+          }
+        });
+      }
+
+      // Chart 2: Biometrics
+      const ctx2 = document.getElementById('biometricsChart');
+      if (ctx2) {
+        const bio = appState.biometrics || [];
+        if (biometricsChartInstance) biometricsChartInstance.destroy();
+        biometricsChartInstance = new Chart(ctx2, {
+          type: 'line',
+          data: {
+            labels: bio.map((b) => b.date),
+            datasets: [
+              {
+                label: 'Peso (kg)',
+                data: bio.map((b) => b.weight),
+                borderColor: '#34d399',
+                backgroundColor: 'rgba(52, 211, 153, 0.15)',
+                tension: 0.3,
+                fill: true
+              },
+              {
+                label: 'Cintura (cm)',
+                data: bio.map((b) => b.waist),
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                tension: 0.3
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+            },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+              y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.4)' } }
+            }
+          }
+        });
+      }
+    }
+
+    // ==================== NAVIGATION & UTILITIES ====================
+    function switchMainView(viewName) {
+      ['tracker', 'postturno', 'alimentos', 'progreso'].forEach((v) => {
+        const sec = document.getElementById(`view-${v}`);
+        const nav = document.getElementById(`nav-${v}`);
+        if (v === viewName) {
+          sec.classList.remove('hidden');
+          nav.className = 'bottom-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-cyan-400 bg-cyan-500/10 font-bold text-xs transition';
+        } else {
+          sec.classList.add('hidden');
+          nav.className = 'bottom-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-xs transition';
+        }
+      });
+      if (viewName === 'progreso') {
+        setTimeout(renderCharts, 60);
+      }
+    }
+
+    function copyDailySummary() {
+      const day = getActiveDay();
+      const totals = getTotalsForDay(day);
+      const t = day.targets;
+      const rem = t.cal - totals.cal;
+
+      const mealLines = day.meals.length
+        ? day.meals.map((m) => `• ${m.time} - ${m.name} (${m.cal} kcal | P:${m.p}g C:${m.c}g G:${m.g}g)`).join('\n')
+        : '• Sin comidas registradas aún';
+
+      const summary = [
+        `📊 *Resumen MacroTurno Pro — ${day.tabLabel}*`,
+        `🏥 Estado: ${day.badge}`,
+        `🔥 Calorías: ${totals.cal} / ${t.cal} kcal (${rem >= 0 ? 'Margen: ' + rem + ' kcal' : 'Exceso: +' + Math.abs(rem) + ' kcal'})`,
+        `🥩 Macros: P: ${totals.p}/${t.p}g | C: ${totals.c}/${t.c}g | G: ${totals.g}/${t.g}g`,
+        `💧 Agua: ${Number(day.water || 0).toFixed(2)}L | ☕ Cafeína: ${day.caffeine || 0}mg | 👟 Pasos: ${day.steps || 0}`,
+        `💊 Creatina 5g: ${day.supplements?.creatine ? '✅' : '⏳'} | Magnesio: ${day.supplements?.magnesium ? '✅' : '⏳'}`,
+        `\n🍽️ *Historial del Día:*`,
+        mealLines
+      ].join('\n');
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(summary).then(() => {
+          showToast('Resumen copiado para pegarlo en el chat');
+        }).catch(() => {
+          fallbackCopy(summary);
+        });
+      } else {
+        fallbackCopy(summary);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Resumen copiado para pegarlo en el chat');
+      } catch (err) {
+        showToast('No se pudo copiar automáticamente');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function exportAppData() {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute('href', dataStr);
+      a.setAttribute('download', 'macroturno_pro_backup.json');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('Respaldo JSON descargado');
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2600);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+    });
+  </script>
+</body>
+</html>
