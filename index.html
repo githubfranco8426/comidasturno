@@ -171,6 +171,10 @@ button:hover { filter:brightness(1.08); }
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
 </style>
+<style>
+.calendar-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}.date-controls{display:flex;align-items:center;gap:7px}.date-controls button,.account-toggle,.backup-button{padding:9px 12px;border-radius:10px;border:1px solid #34464b;background:#17262e;font-size:12px;color:#d9e9e3;min-height:40px}.date-controls input{background:#0e1a20;border:1px solid #34464b;padding:8px;border-radius:10px;color:#e9f5ef;min-width:0;max-width:165px}.account-panel{padding:24px}.account-form{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.account-form label{font-size:12px;color:#a6b8c1;flex:1 1 180px}.account-form input{display:block;width:100%;background:#0c161d;border:1px solid #34464b;border-radius:10px;padding:12px;margin-top:6px;color:white}.account-form button{background:#7ce4b6;color:#10291f;padding:12px 16px;border-radius:10px;font-size:12px;font-weight:bold}.account-form button:disabled{opacity:.5}.account-form.hidden{display:none}@media(max-width:639px){.calendar-toolbar{gap:9px}.date-controls{width:100%}.account-toggle{width:100%}#dayTabsContainer{margin-top:12px}.account-panel{padding:18px}.account-form button{flex:1}#persistentSaveStatus{line-height:1.6}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
 </head>
 <body class="min-h-screen pb-24 text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
 
@@ -209,15 +213,27 @@ button:hover { filter:brightness(1.08); }
       </div>
     </div>
 
+    <div class="max-w-3xl mx-auto calendar-toolbar">
+      <div class="date-controls"><button type="button" onclick="moveDate(-1)" aria-label="Día anterior">‹</button><label class="sr-only" for="selectedDate">Fecha del registro</label><input id="selectedDate" type="date" min="1900-01-01" max="2199-12-31" onchange="selectDate(this.value)"><button type="button" onclick="moveDate(1)" aria-label="Día siguiente">›</button><button type="button" onclick="selectDate(dateKey())">Hoy</button></div>
+      <button type="button" onclick="document.getElementById('accountPanel').classList.toggle('hidden')" class="account-toggle"><i class="fa-solid fa-cloud" aria-hidden="true"></i> Cuenta y respaldo</button>
+    </div>
     <!-- DAY / CYCLE TABS BAR -->
     <div class="max-w-3xl mx-auto mt-3 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="dayTabsContainer">
       <!-- Populated dynamically via JS -->
     </div>
   </header>
 
+<div id="persistentSaveStatus" role="status" aria-live="polite" class="max-w-3xl mx-auto px-4 pt-3 text-xs text-slate-400">Guardado local · Abre Cuenta y respaldo para sincronizar</div>
   <!-- MAIN CONTAINER -->
   <main class="max-w-3xl mx-auto px-4 pt-4 space-y-4">
 
+    <section id="accountPanel" class="glass-card account-panel hidden" aria-label="Cuenta y copias de respaldo">
+      <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="text-lg font-bold">Tu historial, contigo</h2><p id="accountStatus" class="text-xs text-slate-400 mt-1">Inicia sesión para guardar tus registros en la nube.</p></div><button type="button" onclick="exportAppData()" class="backup-button">Descargar respaldo</button></div>
+      <p id="storageStatus" role="status" aria-live="polite" class="text-xs text-cyan-300 my-3">Guardado en este navegador</p>
+      <form id="accountForm" onsubmit="event.preventDefault(); authenticateCloud(false);" class="account-form"><label>Correo<input id="accountEmail" type="email" autocomplete="email" required placeholder="tu@correo.cl"></label><label>Contraseña<input id="accountPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="Mínimo 8 caracteres"></label><button type="submit" id="signInButton">Entrar</button><button type="button" onclick="authenticateCloud(true)" id="signUpButton">Crear cuenta</button></form>
+      <div id="signedInActions" class="hidden flex flex-wrap gap-2 mt-3"><button type="button" onclick="syncCloud()" class="backup-button">Guardar en nube</button><button type="button" onclick="reloadFromCloud()" class="backup-button">Cargar nube</button><button type="button" onclick="signOutCloud()" class="backup-button">Cerrar sesión</button></div>
+      <div class="flex flex-wrap items-center gap-3 mt-4"><label class="backup-button cursor-pointer">Restaurar respaldo<input type="file" accept=".json,application/json" class="sr-only" onchange="importAppData(this)"></label><span class="text-xs text-slate-400">El respaldo permite trasladar los datos de la versión de Google Sites.</span></div>
+    </section>
     <!-- ==================== VIEW 1: TURNO HOY (TRACKER) ==================== -->
     <section id="view-tracker" class="space-y-4 animate-fade">
 
@@ -481,7 +497,7 @@ button:hover { filter:brightness(1.08); }
             <h2 class="text-lg font-extrabold text-white">Estrategia por Fase de Turno</h2>
           </div>
           <button type="button" id="btnLoadFullSaliente" onclick="loadAllSalienteMeals()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center gap-1.5">
-            <span>Cargar todo en Viernes 16 (Saliente)</span>
+            <span>Cargar protocolo en día seleccionado</span>
             <i class="fa-solid fa-chevron-right text-[10px]"></i>
           </button>
         </div>
@@ -1128,34 +1144,92 @@ button:hover { filter:brightness(1.08); }
       ]
     };
 
+    let storageKey = STORAGE_KEY;
+    let storageProblem = '';
+    let cloudClient = null, cloudUser = null, cloudReady = false, cloudConflict = false, cloudBusy = false;
+    let cloudVersion = 0, cloudDirty = false, cloudTimer = null;
     let appState = loadState();
     let caloriesChartInstance = null;
     let biometricsChartInstance = null;
 
+    function dateKey(date = new Date()) {
+      return new Intl.DateTimeFormat('en-CA', {timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+    }
+    function validDate(key) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return false;
+      const d = new Date(key + 'T12:00:00Z');
+      return !Number.isNaN(d.getTime()) && d.toISOString().slice(0,10) === key && key >= '1900-01-01' && key <= '2199-12-31';
+    }
+    function offsetDate(key, offset) {
+      const d = new Date(key + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+offset);
+      return d.toISOString().slice(0,10);
+    }
+    function dayLabel(key) {
+      return new Intl.DateTimeFormat('es-CL',{timeZone:'UTC',weekday:'short',day:'numeric',month:'short',year:'numeric'}).format(new Date(key+'T12:00:00Z'));
+    }
+    function createDay(key) {
+      return { id:key, date:key, tabLabel:dayLabel(key), badge:'Turno por definir', subtitle:dayLabel(key)+' · Elige tu turno con el botón de ciclo', coffeeCutoff:'Configura tu turno', targets:{cal:2200,p:185,c:220,g:65}, water:0,caffeine:0,steps:0, supplements:{creatine:false,magnesium:false,ashwagandha:false,melatonin:false},meals:[] };
+    }
+    function freshState() {
+      const today = dateKey();
+      return {schemaVersion:3, activeDayId:today, portionMultiplier:1,selectedFoodCat:'all',activeProtocolTab:'saliente',days:{[today]:createDay(today)},foods:JSON.parse(JSON.stringify(DEFAULT_FOODS)),biometrics:[]};
+    }
+    function normalizeState(input) {
+      if (!input || typeof input !== 'object' || !input.days || Array.isArray(input.days) || !Object.keys(input.days).length) throw new Error('Respaldo sin días válidos');
+      const state = JSON.parse(JSON.stringify(input));
+      // The original supplied template is dated 15–18 October 2026.
+      const legacy = {jueves15:'2026-10-15',viernes16:'2026-10-16',sabado17:'2026-10-17',domingo18:'2026-10-18'};
+      const days = {};
+      for (const [id,day] of Object.entries(state.days)) {
+        const key = legacy[id] || id;
+        if (!validDate(key) || !day || !Array.isArray(day.meals) || !day.targets) throw new Error('Fecha o registro inválido');
+        if (days[key]) throw new Error('Fechas duplicadas');
+        const numeric = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+        if (!['cal','p','c','g'].every(k=>numeric(day.targets[k]))) throw new Error('Metas inválidas');
+        if (!day.meals.every(m=>m && typeof m.id==='string' && typeof m.name==='string' && typeof m.time==='string' && ['cal','p','c','g'].every(k=>numeric(m[k])))) throw new Error('Comidas inválidas');
+        days[key] = {...createDay(key),...day,id:key,date:key,tabLabel:dayLabel(key)};
+        if (!['water','caffeine','steps'].every(k=>numeric(days[key][k]))) throw new Error('Registro diario inválido');
+      }
+      state.days=days;
+      state.activeDayId=legacy[state.activeDayId] || state.activeDayId;
+      if (!days[state.activeDayId]) state.activeDayId=Object.keys(days).sort().at(-1);
+      if (!Array.isArray(state.foods) || !state.foods.every(f=>f && typeof f.id==='string' && typeof f.name==='string' && typeof f.portion==='string' && ['cal','p','c','g'].every(k=>typeof f[k]==='number' && Number.isFinite(f[k]) && f[k]>=0) && (!f.keywords || (Array.isArray(f.keywords) && f.keywords.every(k=>typeof k==='string'))))) throw new Error('Biblioteca inválida');
+      if (!Array.isArray(state.biometrics) || !state.biometrics.every(b=>b && typeof b.date==='string' && typeof b.weight==='number' && Number.isFinite(b.weight) && typeof b.waist==='number' && Number.isFinite(b.waist))) throw new Error('Mediciones inválidas');
+      state.schemaVersion=3;
+      state.portionMultiplier=[0.5,1,1.5,2].includes(state.portionMultiplier)?state.portionMultiplier:1;
+      state.selectedFoodCat=['all','proteina','carbo','grasa','snack'].includes(state.selectedFoodCat)?state.selectedFoodCat:'all';
+      state.activeProtocolTab=['largo','noche','saliente','libre'].includes(state.activeProtocolTab)?state.activeProtocolTab:'saliente';
+      return state;
+    }
     function loadState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
-        const parsed = JSON.parse(raw);
-        if (!parsed.days || !parsed.days.jueves15) return JSON.parse(JSON.stringify(DEFAULT_STATE));
-        return parsed;
-      } catch (e) {
-        return JSON.parse(JSON.stringify(DEFAULT_STATE));
-      }
+        const raw=localStorage.getItem(storageKey);
+        if (!raw) return freshState();
+        const state=normalizeState(JSON.parse(raw));
+        if (!JSON.parse(raw).schemaVersion) localStorage.setItem(STORAGE_KEY+'_legacy_backup',raw);
+        return state;
+      } catch (e) { storageProblem='No se pudo leer el guardado. Conservamos el original; descarga una copia antes de continuar.'; return freshState(); }
     }
-
+    function updateStorageStatus(message) {
+      for(const id of ['storageStatus','persistentSaveStatus']) { const el=document.getElementById(id); if(el) el.textContent=message; }
+    }
     function saveState() {
+      if (storageProblem) { updateStorageStatus(storageProblem); return false; }
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-      } catch (e) {
-        // Ignore storage errors in restricted iframes
-      }
+        localStorage.setItem(storageKey,JSON.stringify(appState));
+        if(cloudUser) { cloudDirty=true; saveCloudMeta(); scheduleCloudSave(); }
+        else updateStorageStatus('Guardado en este navegador · Inicia sesión para usar la nube');
+        return true;
+      } catch(e) { updateStorageStatus('No se pudo guardar en este navegador. Descarga un respaldo.'); return false; }
     }
-
-    function getActiveDay() {
-      return appState.days[appState.activeDayId] || appState.days.jueves15;
+    function getActiveDay() { return appState.days[appState.activeDayId]; }
+    function selectDate(key) {
+      if(!validDate(key)) { showToast('Elige una fecha válida entre 1900 y 2199'); return; }
+      if(!appState.days[key]) appState.days[key]=createDay(key);
+      appState.activeDayId=key; saveState(); renderAll();
+      if(!document.getElementById('view-progreso').classList.contains('hidden')) renderCharts();
     }
-
+    function moveDate(amount) { selectDate(offsetDate(appState.activeDayId,amount)); }
     function getTotalsForDay(day) {
       return day.meals.reduce(
         (acc, item) => {
@@ -1183,23 +1257,22 @@ button:hover { filter:brightness(1.08); }
       const day = getActiveDay();
       document.getElementById('headerShiftBadge').textContent = day.badge;
       document.getElementById('headerSubtitle').textContent = day.subtitle;
-      document.getElementById('coffeeCutoffBadge').innerHTML = `<i class="fa-solid fa-mug-hot"></i> ${day.coffeeCutoff}`;
+      document.getElementById('coffeeCutoffBadge').innerHTML = `<i class="fa-solid fa-mug-hot"></i> ${escapeHtml(day.coffeeCutoff)}`;
 
       const container = document.getElementById('dayTabsContainer');
       container.innerHTML = '';
 
-      Object.values(appState.days).forEach((d) => {
+      document.getElementById('selectedDate').value=appState.activeDayId;
+      Array.from({length:7},(_,i)=>offsetDate(appState.activeDayId,i-3)).filter(validDate).map(key=>appState.days[key] || createDay(key)).forEach((d) => {
         const isActive = d.id === appState.activeDayId;
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = isActive
           ? 'px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 whitespace-nowrap transition flex items-center gap-1.5'
           : 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900/90 text-slate-400 hover:text-white border border-slate-800 whitespace-nowrap transition flex items-center gap-1.5';
-        btn.innerHTML = `<span>${d.tabLabel}</span> <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-slate-950/25 text-slate-950' : 'bg-slate-800 text-slate-400'}">${d.meals.length}</span>`;
+        btn.innerHTML = `<span>${escapeHtml(d.tabLabel)}</span> <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-slate-950/25 text-slate-950' : 'bg-slate-800 text-slate-400'}">${d.meals.length}</span>`;
         btn.addEventListener('click', () => {
-          appState.activeDayId = d.id;
-          saveState();
-          renderAll();
+          selectDate(d.id);
         });
         container.appendChild(btn);
       });
@@ -1311,7 +1384,7 @@ button:hover { filter:brightness(1.08); }
         row.innerHTML = `
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-bold text-[11px]">${meal.time}</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-bold text-[11px]">${escapeHtml(meal.time)}</span>
               <span class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(meal.name)}</span>
             </div>
             <div class="text-xs text-slate-400 mt-1 font-medium">
@@ -1567,7 +1640,7 @@ button:hover { filter:brightness(1.08); }
                 + Cargar en Día Activo
               </button>
               <button type="button" class="load-viernes-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold whitespace-nowrap transition">
-                + Cargar en Viernes 16
+                + Cargar en día seleccionado
               </button>
             </div>
           ` : ''}
@@ -1582,11 +1655,10 @@ button:hover { filter:brightness(1.08); }
             showToast(`Cargado en ${day.tabLabel}: ${card.mealData.name}`);
           });
           div.querySelector('.load-viernes-btn').addEventListener('click', () => {
-            appState.days.viernes16.meals.push({ id: 'm_' + Date.now() + idx, ...card.mealData });
-            appState.activeDayId = 'viernes16';
+            getActiveDay().meals.push({ id: 'm_' + Date.now() + idx, ...card.mealData });
             saveState();
             renderAll();
-            showToast('Cargado en Viernes 16 (Saliente)');
+            showToast('Cargado en el día seleccionado');
           });
         }
         container.appendChild(div);
@@ -1596,17 +1668,16 @@ button:hover { filter:brightness(1.08); }
     function loadAllSalienteMeals() {
       const salienteCards = PROTOCOL_GUIDES.saliente.filter((c) => c.mealData);
       salienteCards.forEach((c, idx) => {
-        appState.days.viernes16.meals.push({
+        getActiveDay().meals.push({
           id: 'm_sal_' + Date.now() + '_' + idx,
           ...c.mealData
         });
       });
-      appState.days.viernes16.supplements.creatine = true;
-      appState.activeDayId = 'viernes16';
+      getActiveDay().supplements.creatine = true;
       saveState();
       renderAll();
       switchMainView('tracker');
-      showToast('Protocolo Saliente completo cargado en Viernes 16 (1.655 kcal | 166g P)');
+      showToast('Protocolo Saliente cargado en el día seleccionado');
     }
 
     // ==================== FOOD LIBRARY ====================
@@ -1660,7 +1731,7 @@ button:hover { filter:brightness(1.08); }
           <div class="min-w-0">
             <div class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(food.name)}</div>
             <div class="text-[11px] text-slate-400 mt-0.5">
-              <span class="text-cyan-400 font-bold">${portionLabel}</span> •
+              <span class="text-cyan-400 font-bold">${escapeHtml(portionLabel)}</span> •
               <span class="text-white font-semibold">${cal} kcal</span> |
               <span class="text-rose-400 font-semibold">${p}g P</span> |
               C: ${c}g | G: ${g}g
@@ -1674,7 +1745,7 @@ button:hover { filter:brightness(1.08); }
           const now = new Date();
           const hh = String(now.getHours()).padStart(2, '0');
           const mm = String(now.getMinutes()).padStart(2, '0');
-          quickLogMeal(`${food.name} (${portionLabel})`, cal, p, c, g, `${hh}:${mm}`);
+          quickLogMeal(`${food.name} (${escapeHtml(portionLabel)})`, cal, p, c, g, `${hh}:${mm}`);
         });
         grid.appendChild(card);
       });
@@ -1716,6 +1787,8 @@ button:hover { filter:brightness(1.08); }
 
     function resetCurrentDayLogs() {
       const day = getActiveDay();
+      if(!confirm('¿Vaciar comidas, agua y cafeína de '+day.tabLabel+'? Los otros días se conservan.')) return;
+      exportAppData();
       day.meals = [];
       day.water = 0;
       day.caffeine = 0;
@@ -1810,6 +1883,7 @@ button:hover { filter:brightness(1.08); }
 
     function applyShiftPreset(phase) {
       const day = getActiveDay();
+      day.phase=phase;
       if (phase === 'largo') {
         day.badge = 'Turno Diurno';
         day.coffeeCutoff = 'Corte café: 15:00 PM';
@@ -1827,6 +1901,7 @@ button:hover { filter:brightness(1.08); }
         day.coffeeCutoff = 'Corte café: 15:00 PM';
         day.targets = { cal: 2450, p: 185, c: 255, g: 70 };
       }
+      day.subtitle=dayLabel(day.id)+' · '+day.badge;
       saveState();
       closePhasePresetModal();
       renderAll();
@@ -1889,8 +1964,8 @@ button:hover { filter:brightness(1.08); }
       // Chart 1: Calories per day vs Target
       const ctx1 = document.getElementById('caloriesChart');
       if (ctx1) {
-        const daysArr = Object.values(appState.days);
-        const labels = daysArr.map((d) => d.tabLabel.split(' ')[0]);
+        const daysArr = Object.values(appState.days).sort((a,b)=>a.id.localeCompare(b.id)).filter(d=>d.id<=appState.activeDayId).slice(-14);
+        const labels = daysArr.map((d) => d.id.slice(8)+'/'+d.id.slice(5,7));
         const consumed = daysArr.map((d) => getTotalsForDay(d).cal);
         const targets = daysArr.map((d) => d.targets.cal);
 
@@ -1903,7 +1978,7 @@ button:hover { filter:brightness(1.08); }
               {
                 label: 'Consumido (kcal)',
                 data: consumed,
-                backgroundColor: 'rgba(6, 182, 212, 0.75)',
+                backgroundColor: 'rgba(124, 228, 182, 0.75)',
                 borderRadius: 6
               },
               {
@@ -2036,17 +2111,24 @@ button:hover { filter:brightness(1.08); }
       document.body.removeChild(ta);
     }
 
-    function exportAppData() {
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appState, null, 2));
-      const a = document.createElement('a');
-      a.setAttribute('href', dataStr);
-      a.setAttribute('download', 'macroturno_pro_backup.json');
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      showToast('Respaldo JSON descargado');
+    function downloadJSON(data,name) {
+      const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+      const a=document.createElement('a'); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
-
+    function exportAppData() {
+      downloadJSON(appState,'macroturno-'+dateKey()+'.json'); showToast('Respaldo descargado');
+    }
+    async function importAppData(input) {
+      try {
+        const file=input.files[0]; if(!file) return;
+        if(file.size>5*1024*1024) throw new Error('El respaldo supera los 5 MB');
+        const imported=normalizeState(JSON.parse(await file.text()));
+        if(!confirm('¿Restaurar este respaldo? Primero descargaremos una copia del historial actual.')) return;
+        exportAppData();
+        if(storageProblem) { const raw=localStorage.getItem(storageKey); if(raw) downloadJSON({original:raw},'macroturno-original.json'); }
+        storageProblem=''; appState=imported; saveState(); renderAll(); showToast('Respaldo restaurado');
+      } catch(e) { showToast('No se restauró: '+e.message); } finally { input.value=''; }
+    }
     let toastTimeout = null;
     function showToast(msg) {
       const toast = document.getElementById('toastNotification');
@@ -2069,8 +2151,13 @@ button:hover { filter:brightness(1.08); }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      const today=dateKey(); if(!appState.days[today]) appState.days[today]=createDay(today);
+      appState.activeDayId=today;
       renderAll();
+      if(storageProblem) updateStorageStatus(storageProblem);
+      initCloud();
     });
   </script>
+<script src="cloud.js"></script>
 </body>
 </html>

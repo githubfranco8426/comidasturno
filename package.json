@@ -1,0 +1,7 @@
+{
+  "name": "macroturno",
+  "version": "3.0.0",
+  "private": true,
+  "scripts": {"test": "node tests/flow.cjs"},
+  "devDependencies": {"jsdom": "26.1.0"}
+}
