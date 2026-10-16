@@ -233,6 +233,14 @@ button:hover { filter:brightness(1.08); }
       <form id="accountForm" onsubmit="event.preventDefault(); authenticateCloud(false);" class="account-form"><label>Correo<input id="accountEmail" type="email" autocomplete="email" required placeholder="tu@correo.cl"></label><label>Contraseña<input id="accountPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="Mínimo 8 caracteres"></label><button type="submit" id="signInButton">Entrar</button><button type="button" onclick="authenticateCloud(true)" id="signUpButton">Crear cuenta</button></form>
       <div id="signedInActions" class="hidden flex flex-wrap gap-2 mt-3"><button type="button" onclick="syncCloud()" class="backup-button">Guardar en nube</button><button type="button" onclick="reloadFromCloud()" class="backup-button">Cargar nube</button><button type="button" onclick="signOutCloud()" class="backup-button">Cerrar sesión</button></div>
       <div class="flex flex-wrap items-center gap-3 mt-4"><label class="backup-button cursor-pointer">Restaurar respaldo<input type="file" accept=".json,application/json" class="sr-only" onchange="importAppData(this)"></label><span class="text-xs text-slate-400">El respaldo permite trasladar los datos de la versión de Google Sites.</span></div>
+      <details id="summaryImport" class="mt-4 border-t border-slate-700 pt-4">
+        <summary class="text-sm font-bold text-cyan-300 cursor-pointer">Importar resumen de la app anterior</summary>
+        <p class="text-xs text-slate-400 my-3">Pega el resumen que copiaste en Google Sites y confirma la fecha. Se agregarán las comidas faltantes y se actualizarán las metas y los indicadores que incluya.</p>
+        <label for="summaryDate" class="text-xs text-slate-300">Fecha del registro</label><input id="summaryDate" type="date" min="1900-01-01" max="2199-12-31" class="block bg-slate-900 border border-slate-700 rounded-lg p-2 my-2">
+        <label for="summaryText" class="sr-only">Resumen copiado de MacroTurno</label><textarea id="summaryText" rows="8" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm" placeholder="Pega aquí el resumen completo de MacroTurno"></textarea>
+        <button type="button" onclick="importDailySummary()" class="backup-button mt-3">Importar este día</button>
+        <p id="summaryImportStatus" role="status" class="text-xs text-cyan-300 mt-3"></p>
+      </details>
     </section>
     <!-- ==================== VIEW 1: TURNO HOY (TRACKER) ==================== -->
     <section id="view-tracker" class="space-y-4 animate-fade">
@@ -2153,11 +2161,14 @@ button:hover { filter:brightness(1.08); }
     window.addEventListener('DOMContentLoaded', () => {
       const today=dateKey(); if(!appState.days[today]) appState.days[today]=createDay(today);
       appState.activeDayId=today;
+      document.getElementById('summaryDate').value=today;
+      prepareSummaryLink();
       renderAll();
       if(storageProblem) updateStorageStatus(storageProblem);
       initCloud();
     });
   </script>
 <script src="cloud.js"></script>
+<script src="summary-import.js"></script>
 </body>
 </html>

@@ -39,3 +39,7 @@ Las pruebas comprueban calendario, migración, persistencia, errores de almacena
 `supabase/schema.sql` documenta la tabla y las políticas ya instaladas. No debe ejecutarse de nuevo sobre la misma tabla. Las alertas del asesor de Supabase encontradas pertenecen a objetos previos del proyecto (app_state, funciones de entrenadores y configuración de contraseñas); la tabla de MacroTurno tiene RLS y políticas de propiedad.
 
 Gemini continúa pendiente. El campo de comida usa la biblioteca local y estimaciones; todavía no consulta un modelo de IA.
+
+## Recuperar desde un resumen de texto
+
+En **Cuenta y respaldo → Importar resumen de la app anterior**, pega el texto de Copiar resumen, selecciona la fecha completa y confirma. La app valida los totales, agrega comidas faltantes sin duplicar coincidencias exactas y actualiza únicamente los indicadores presentes. Conserva los otros días y descarga un respaldo antes de importar. Para el Jueves 15 del HTML original, selecciona 2026-10-15. Si estás conectado, sincroniza el cambio con tu cuenta. El resumen no contiene las otras fechas ni los suplementos no mencionados.
