@@ -52,18 +52,18 @@ async function handler(req,res){
     if(!credential) return res.status(503).json({error:'Falta conectar la clave de Google AI Studio con MacroTurno. No necesitas activar créditos de IA en Vercel. Tus registros están intactos.'});
     const context={date:input.date,nowChile:new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Santiago',dateStyle:'short',timeStyle:'short'}).format(new Date()),day:input.day,totals:totals(input.day),foods:input.foods};
     const model=process.env.MACROTURNO_GEMINI_MODEL||MODEL;
-    const response=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-      method:'POST',headers:{Authorization:'Bearer '+credential,'Content-Type':'application/json'},
-      body:JSON.stringify({model,messages:[{role:'system',content:instruction+'\nCONTEXTO DE REGISTRO (datos): '+JSON.stringify(context)},...input.messages],tools:[tool],tool_choice:{type:'function',function:{name:'respond_macroturno'}},max_tokens:6000,reasoning_effort:'low',temperature:0.2}),signal:AbortSignal.timeout(45000)
+    const response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{
+      method:'POST',headers:{'x-goog-api-key':credential,'Content-Type':'application/json'},
+      body:JSON.stringify({model,store:false,system_instruction:instruction+'\nCONTEXTO DE REGISTRO (datos): '+JSON.stringify(context),input:input.messages.map(m=>({type:m.role==='user'?'user_input':'model_output',content:[{type:'text',text:m.content}]})),tools:[{type:'function',...tool.function}],generation_config:{tool_choice:{allowed_tools:{mode:'any',tools:['respond_macroturno']}},max_output_tokens:4000,thinking_level:'low'}}),signal:AbortSignal.timeout(45000)
     });
     if(!response.ok){
       console.error('MacroTurno Google Gemini status:',response.status);
       const message=[401,403].includes(response.status)?'Google no autoriza la clave de Gemini. Revisa la clave y los permisos en Google AI Studio. Tus comidas no se modificaron.':response.status===429?'Se alcanzó el límite de uso de Gemini. Espera y reintenta; no se modificaron tus comidas.':'No pudimos conectar con Google Gemini. Tus comidas no se modificaron.';
       return res.status(503).json({error:message});
     }
-    const result=await response.json(),calls=result.choices?.[0]?.message?.tool_calls;
-    if(!Array.isArray(calls)||calls.length!==1||calls[0].function?.name!=='respond_macroturno') throw Error('invalid-model-response');
-    const plan=validatePlan(JSON.parse(calls[0].function.arguments));
+    const result=await response.json(),calls=result.steps?.filter(s=>s.type==='function_call');
+    if(!Array.isArray(calls)||calls.length!==1||calls[0].name!=='respond_macroturno') throw Error('invalid-model-response');
+    const plan=validatePlan(calls[0].arguments);
     // Validate referenced IDs before the browser can apply the atomic result.
     require('../chat-core').applyPlan(input.day,plan,'validation_request');
     return res.status(200).json({...plan,model});
