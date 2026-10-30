@@ -19,9 +19,9 @@ function setup(){
  a.selectDate('2026-10-29');a.getState().days['2026-10-29'].meals=[{...meal}];a.renderAll();
  return {dom,w,a,close(){a.stopTimer();dom.window.close();}};
 }
-async function server(body,authorization='Bearer fake'){
+async function server(body,authorization='Bearer fake',extraHeaders={}){
  let code,payload;const headers={};
- await handler({method:'POST',headers:{authorization},body},{setHeader(k,v){headers[k]=v},status(s){code=s;return this},json(p){payload=p;return this}});
+ await handler({method:'POST',headers:{authorization,...extraHeaders},body},{setHeader(k,v){headers[k]=v},status(s){code=s;return this},json(p){payload=p;return this}});
  return {code,payload,headers};
 }
 (async()=>{
@@ -48,6 +48,9 @@ async function server(body,authorization='Bearer fake'){
    return {ok:true,json:async()=>({choices:[{message:{tool_calls:[{function:{name:'respond_macroturno',arguments:JSON.stringify(add)}}]}}]})};
   };
   const success=await server(request);assert.equal(success.code,200);assert.equal(success.payload.operations.length,1);assert.equal(call,1);assert.equal(success.headers['Cache-Control'],'no-store');
+  delete process.env.AI_GATEWAY_API_KEY;
+  assert.equal((await server(request,'Bearer fake',{'x-vercel-oidc-token':'runtime-test-token'})).code,200,'runtime OIDC header authenticates gateway without static key');
+  process.env.AI_GATEWAY_API_KEY='test-only';
   global.fetch=async(url)=>url.includes('supabase')?{ok:true,json:async()=>({id:'other-test-owner'})}:{ok:false,status:402};
   assert.equal((await server(request)).code,503);
  }finally{global.fetch=originalFetch;if(originalKey===undefined) delete process.env.AI_GATEWAY_API_KEY;else process.env.AI_GATEWAY_API_KEY=originalKey;}

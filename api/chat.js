@@ -47,7 +47,8 @@ async function handler(req,res){
     if(bucket && now-bucket.start<60000 && bucket.count>=12) return res.status(429).json({error:'Espera un minuto antes de enviar otro mensaje.'});
     if(!bucket || now-bucket.start>=60000) limits.set(user.id,{start:now,count:1});else bucket.count++;
     if(limits.size>2000) for(const [id,b] of limits) if(now-b.start>60000) limits.delete(id);
-    const credential=process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN;
+    // Runtime OIDC is injected by Vercel per request; the env var is for local/build use.
+    const credential=process.env.AI_GATEWAY_API_KEY||req.headers['x-vercel-oidc-token']||process.env.VERCEL_OIDC_TOKEN;
     if(!credential) return res.status(503).json({error:'Falta activar la conexión con Gemini en el servidor. Tus registros están intactos.'});
     const context={date:input.date,nowChile:new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Santiago',dateStyle:'short',timeStyle:'short'}).format(new Date()),day:input.day,totals:totals(input.day),foods:input.foods};
     const response=await fetch('https://ai-gateway.vercel.sh/v1/chat/completions',{
