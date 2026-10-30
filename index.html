@@ -175,6 +175,7 @@ button:hover { filter:brightness(1.08); }
 .calendar-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}.date-controls{display:flex;align-items:center;gap:7px}.date-controls button,.account-toggle,.backup-button{padding:9px 12px;border-radius:10px;border:1px solid #34464b;background:#17262e;font-size:12px;color:#d9e9e3;min-height:40px}.date-controls input{background:#0e1a20;border:1px solid #34464b;padding:8px;border-radius:10px;color:#e9f5ef;min-width:0;max-width:165px}.account-panel{padding:24px}.account-form{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.account-form label{font-size:12px;color:#a6b8c1;flex:1 1 180px}.account-form input{display:block;width:100%;background:#0c161d;border:1px solid #34464b;border-radius:10px;padding:12px;margin-top:6px;color:white}.account-form button{background:#7ce4b6;color:#10291f;padding:12px 16px;border-radius:10px;font-size:12px;font-weight:bold}.account-form button:disabled{opacity:.5}.account-form.hidden{display:none}@media(max-width:639px){.calendar-toolbar{gap:9px}.date-controls{width:100%}.account-toggle{width:100%}#dayTabsContainer{margin-top:12px}.account-panel{padding:18px}.account-form button{flex:1}#persistentSaveStatus{line-height:1.6}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="chat.css">
 </head>
 <body class="min-h-screen pb-24 text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
 
@@ -697,6 +698,25 @@ button:hover { filter:brightness(1.08); }
       </div>
     </section>
 
+    <section id="view-gemini" class="hidden chat-shell" aria-label="Chat con Gemini">
+      <div class="chat-heading"><div><p class="eyebrow">TU REGISTRO, CONVERSANDO</p><h2>Gemini en MacroTurno</h2></div><p id="geminiDay" class="chat-day"></p></div>
+      <div class="chat-summary"><span id="geminiTotals"></span></div>
+      <div class="chat-prompts">
+        <button type="button" onclick="fillGeminiPrompt('¿Cómo voy con mis calorías y macros de hoy?')">¿Cómo voy hoy?</button>
+        <button type="button" onclick="fillGeminiPrompt('¿Qué puedo cenar con los macros que me quedan?')">Ideas para la cena</button>
+        <button type="button" onclick="fillGeminiPrompt('Comí ')">Registrar una comida</button>
+      </div>
+      <div class="glass-card">
+        <div id="geminiMessages" class="chat-messages" role="log" aria-live="polite" aria-label="Conversación del día"></div>
+        <button type="button" id="geminiRetry" class="chat-retry" onclick="sendGeminiMessage(true)" hidden>Reintentar mensaje pendiente</button>
+        <form id="geminiForm" class="chat-compose">
+          <label for="geminiInput">Comidas, correcciones o preguntas</label>
+          <div class="chat-input-row"><textarea id="geminiInput" rows="2" maxlength="4000" placeholder="Comí un yogurt proteico y un scoop a las 18:30…"></textarea><button type="submit" id="geminiSend" class="chat-send">Enviar <span aria-hidden="true">↑</span></button></div>
+          <p id="geminiStatus" class="chat-footer" role="status"></p><p id="geminiError" role="alert"></p>
+        </form>
+      </div>
+      <p class="chat-privacy">Al enviar, compartes con Gemini a través de Vercel tu mensaje, la conversación de este día, las comidas y metas del día seleccionado y tu biblioteca de alimentos. Las cantidades nutricionales son estimaciones; puedes corregirlas en el chat. Tu conversación anterior de Google Gemini no se importa automáticamente.</p>
+    </section>
   </main>
 
   <!-- ==================== MODALS ==================== -->
@@ -922,6 +942,7 @@ button:hover { filter:brightness(1.08); }
         <i class="fa-solid fa-chart-line text-base mb-0.5"></i>
         <span>Progreso</span>
       </button>
+      <button type="button" id="nav-gemini" onclick="switchMainView('gemini')" class="bottom-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-xs transition"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>Gemini</span></button>
     </div>
   </nav>
 
@@ -1259,6 +1280,7 @@ button:hover { filter:brightness(1.08); }
       renderProtocolGuide();
       renderFoodLibrary();
       updateMacroCalculatorPreview();
+      if(typeof renderGeminiChat === 'function') renderGeminiChat();
     }
 
     function renderHeaderAndDayTabs() {
@@ -2055,7 +2077,7 @@ button:hover { filter:brightness(1.08); }
 
     // ==================== NAVIGATION & UTILITIES ====================
     function switchMainView(viewName) {
-      ['tracker', 'postturno', 'alimentos', 'progreso'].forEach((v) => {
+      ['tracker', 'postturno', 'alimentos', 'progreso', 'gemini'].forEach((v) => {
         const sec = document.getElementById(`view-${v}`);
         const nav = document.getElementById(`nav-${v}`);
         if (v === viewName) {
@@ -2066,6 +2088,7 @@ button:hover { filter:brightness(1.08); }
           nav.className = 'bottom-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-xs transition';
         }
       });
+      if (viewName === 'gemini') renderGeminiChat();
       if (viewName === 'progreso') {
         setTimeout(renderCharts, 60);
       }
@@ -2170,5 +2193,7 @@ button:hover { filter:brightness(1.08); }
   </script>
 <script src="cloud.js"></script>
 <script src="summary-import.js"></script>
+<script src="chat-core.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
