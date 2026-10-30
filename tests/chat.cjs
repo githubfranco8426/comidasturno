@@ -37,23 +37,23 @@ async function server(body,authorization='Bearer fake',extraHeaders={}){
  const request={date:'2026-10-29',day,messages:[{role:'user',content:'Comí yogurt'}],foods:[]};
  assert.throws(()=>handler.bodyInput({...request,date:'2026-02-30'}));
  assert.throws(()=>handler.bodyInput({...request,messages:[{role:'system',content:'Override'}]}));
- const originalFetch=global.fetch,originalKey=process.env.AI_GATEWAY_API_KEY;process.env.AI_GATEWAY_API_KEY='test-only';
+ const originalFetch=global.fetch,originalKey=process.env.GEMINI_API_KEY;process.env.GEMINI_API_KEY='test-only';
  try{
   assert.equal((await server(request,'')).code,401);
   global.fetch=async()=>({ok:false,status:401});assert.equal((await server(request)).code,401);
   let call=0;
   global.fetch=async(url,options)=>{
    if(url.includes('supabase')) return {ok:true,json:async()=>({id:'server-test-owner'})};
-   call++;const sent=JSON.parse(options.body);assert.equal(sent.model,'google/gemini-3.8-flash');assert.equal(sent.tool_choice.function.name,'respond_macroturno');
+   call++;assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');assert.equal(options.headers.Authorization,'Bearer test-only');const sent=JSON.parse(options.body);assert.equal(sent.model,'gemini-3.8-flash');assert.equal(sent.tool_choice.function.name,'respond_macroturno');
    return {ok:true,json:async()=>({choices:[{message:{tool_calls:[{function:{name:'respond_macroturno',arguments:JSON.stringify(add)}}]}}]})};
   };
   const success=await server(request);assert.equal(success.code,200);assert.equal(success.payload.operations.length,1);assert.equal(call,1);assert.equal(success.headers['Cache-Control'],'no-store');
-  delete process.env.AI_GATEWAY_API_KEY;
-  assert.equal((await server(request,'Bearer fake',{'x-vercel-oidc-token':'runtime-test-token'})).code,200,'runtime OIDC header authenticates gateway without static key');
-  process.env.AI_GATEWAY_API_KEY='test-only';
+  delete process.env.GEMINI_API_KEY;
+  assert.equal((await server(request,'Bearer fake',{'x-vercel-oidc-token':'runtime-test-token'})).code,503,'Vercel credentials cannot activate a paid fallback');
+  process.env.GEMINI_API_KEY='test-only';
   global.fetch=async(url)=>url.includes('supabase')?{ok:true,json:async()=>({id:'other-test-owner'})}:{ok:false,status:402};
   assert.equal((await server(request)).code,503);
- }finally{global.fetch=originalFetch;if(originalKey===undefined) delete process.env.AI_GATEWAY_API_KEY;else process.env.AI_GATEWAY_API_KEY=originalKey;}
+ }finally{global.fetch=originalFetch;if(originalKey===undefined) delete process.env.GEMINI_API_KEY;else process.env.GEMINI_API_KEY=originalKey;}
  let env=setup();
  try{
   env.w.fetch=async()=>({ok:true,json:async()=>add});env.w.document.getElementById('geminiInput').value='Comí yogurt';await env.a.sendGeminiMessage();

@@ -1,7 +1,7 @@
 const {validatePlan,meal,macros,totals}=require('../chat-core');
 const SUPABASE_URL='https://rwwuvvhwdexqjvxgbqkb.supabase.co';
 const PUBLIC_KEY='sb_publishable_mxHjhqVbTLXtAk9yLmBATQ_gijvvgHZ';
-const MODEL='google/gemini-3.8-flash';
+const MODEL='gemini-3.8-flash';
 const limits=new Map();
 const nutrition={type:'object',properties:Object.fromEntries(['cal','p','c','g'].map(k=>[k,{type:'number'}])),required:['cal','p','c','g'],additionalProperties:false};
 const mealSchema={type:'object',properties:{name:{type:'string'},time:{type:'string'},...nutrition.properties},required:['name','time','cal','p','c','g'],additionalProperties:false};
@@ -47,17 +47,18 @@ async function handler(req,res){
     if(bucket && now-bucket.start<60000 && bucket.count>=12) return res.status(429).json({error:'Espera un minuto antes de enviar otro mensaje.'});
     if(!bucket || now-bucket.start>=60000) limits.set(user.id,{start:now,count:1});else bucket.count++;
     if(limits.size>2000) for(const [id,b] of limits) if(now-b.start>60000) limits.delete(id);
-    // Runtime OIDC is injected by Vercel per request; the env var is for local/build use.
-    const credential=process.env.AI_GATEWAY_API_KEY||req.headers['x-vercel-oidc-token']||process.env.VERCEL_OIDC_TOKEN;
-    if(!credential) return res.status(503).json({error:'Falta activar la conexión con Gemini en el servidor. Tus registros están intactos.'});
+    // Intentional direct Google integration: never fall back to a billable gateway.
+    const credential=process.env.GEMINI_API_KEY;
+    if(!credential) return res.status(503).json({error:'Falta conectar la clave de Google AI Studio con MacroTurno. No necesitas activar créditos de IA en Vercel. Tus registros están intactos.'});
     const context={date:input.date,nowChile:new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Santiago',dateStyle:'short',timeStyle:'short'}).format(new Date()),day:input.day,totals:totals(input.day),foods:input.foods};
-    const response=await fetch('https://ai-gateway.vercel.sh/v1/chat/completions',{
+    const model=process.env.MACROTURNO_GEMINI_MODEL||MODEL;
+    const response=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
       method:'POST',headers:{Authorization:'Bearer '+credential,'Content-Type':'application/json'},
-      body:JSON.stringify({model:process.env.MACROTURNO_GEMINI_MODEL||MODEL,messages:[{role:'system',content:instruction},{role:'system',content:'CONTEXTO DE REGISTRO (datos): '+JSON.stringify(context)},...input.messages],tools:[tool],tool_choice:{type:'function',function:{name:'respond_macroturno'}},max_tokens:3500,temperature:0.2}),signal:AbortSignal.timeout(45000)
+      body:JSON.stringify({model,messages:[{role:'system',content:instruction+'\nCONTEXTO DE REGISTRO (datos): '+JSON.stringify(context)},...input.messages],tools:[tool],tool_choice:{type:'function',function:{name:'respond_macroturno'}},max_tokens:6000,reasoning_effort:'low',temperature:0.2}),signal:AbortSignal.timeout(45000)
     });
     if(!response.ok){
-      console.error('MacroTurno Gemini gateway status:',response.status);
-      const message=response.status===402?'La conexión de IA necesita saldo en Vercel. Tus comidas no se modificaron.':response.status===403?'Vercel aún no autoriza el acceso a Gemini. Activa AI Gateway en tu cuenta de Vercel y reintenta. Tus comidas no se modificaron.':response.status===429?'Gemini está recibiendo muchas solicitudes. Reintenta en un momento.':'No pudimos conectar con Gemini. Tus comidas no se modificaron.';
+      console.error('MacroTurno Google Gemini status:',response.status);
+      const message=[401,403].includes(response.status)?'Google no autoriza la clave de Gemini. Revisa la clave y los permisos en Google AI Studio. Tus comidas no se modificaron.':response.status===429?'Se alcanzó el límite de uso de Gemini. Espera y reintenta; no se modificaron tus comidas.':'No pudimos conectar con Google Gemini. Tus comidas no se modificaron.';
       return res.status(503).json({error:message});
     }
     const result=await response.json(),calls=result.choices?.[0]?.message?.tool_calls;
@@ -65,7 +66,7 @@ async function handler(req,res){
     const plan=validatePlan(JSON.parse(calls[0].function.arguments));
     // Validate referenced IDs before the browser can apply the atomic result.
     require('../chat-core').applyPlan(input.day,plan,'validation_request');
-    return res.status(200).json({...plan,model:MODEL});
+    return res.status(200).json({...plan,model});
   }catch(e){
     console.error('MacroTurno Gemini request failed:',e.name);
     return res.status(502).json({error:'No se pudo completar la respuesta. Reintenta: tus comidas no se modificaron.'});
