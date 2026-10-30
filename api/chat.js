@@ -57,7 +57,7 @@ async function handler(req,res){
     });
     if(!response.ok){
       console.error('MacroTurno Gemini gateway status:',response.status);
-      const message=response.status===402?'La conexión de IA necesita saldo en Vercel. Tus comidas no se modificaron.':response.status===429?'Gemini está recibiendo muchas solicitudes. Reintenta en un momento.':'No pudimos conectar con Gemini. Tus comidas no se modificaron.';
+      const message=response.status===402?'La conexión de IA necesita saldo en Vercel. Tus comidas no se modificaron.':response.status===403?'Vercel aún no autoriza el acceso a Gemini. Activa AI Gateway en tu cuenta de Vercel y reintenta. Tus comidas no se modificaron.':response.status===429?'Gemini está recibiendo muchas solicitudes. Reintenta en un momento.':'No pudimos conectar con Gemini. Tus comidas no se modificaron.';
       return res.status(503).json({error:message});
     }
     const result=await response.json(),calls=result.choices?.[0]?.message?.tool_calls;
