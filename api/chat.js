@@ -1,7 +1,7 @@
 const {validatePlan,meal,macros,totals}=require('../chat-core');
 const SUPABASE_URL='https://rwwuvvhwdexqjvxgbqkb.supabase.co';
 const PUBLIC_KEY='sb_publishable_mxHjhqVbTLXtAk9yLmBATQ_gijvvgHZ';
-const MODEL='gemini-3.8-flash';
+const MODEL='gemini-3.5-flash-lite';
 const limits=new Map();
 const nutrition={type:'object',properties:Object.fromEntries(['cal','p','c','g'].map(k=>[k,{type:'number'}])),required:['cal','p','c','g'],additionalProperties:false};
 const mealSchema={type:'object',properties:{name:{type:'string'},time:{type:'string'},...nutrition.properties},required:['name','time','cal','p','c','g'],additionalProperties:false};
@@ -54,7 +54,7 @@ async function handler(req,res){
     const model=process.env.MACROTURNO_GEMINI_MODEL||MODEL;
     const response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{
       method:'POST',headers:{'x-goog-api-key':credential,'Content-Type':'application/json'},
-      body:JSON.stringify({model,store:false,system_instruction:instruction+'\nCONTEXTO DE REGISTRO (datos): '+JSON.stringify(context),input:input.messages.map(m=>({type:m.role==='user'?'user_input':'model_output',content:[{type:'text',text:m.content}]})),tools:[{type:'function',...tool.function}],generation_config:{tool_choice:{allowed_tools:{mode:'any',tools:['respond_macroturno']}},max_output_tokens:4000,thinking_level:'low'}}),signal:AbortSignal.timeout(45000)
+      body:JSON.stringify({model,store:false,system_instruction:instruction+'\nCONTEXTO DE REGISTRO (datos): '+JSON.stringify(context),input:input.messages.map(m=>({type:m.role==='user'?'user_input':'model_output',content:[{type:'text',text:m.content}]})),tools:[{type:'function',...tool.function}],generation_config:{tool_choice:{allowed_tools:{mode:'any',tools:['respond_macroturno']}},max_output_tokens:4000,thinking_level:model.includes('flash-lite')?'minimal':'low'}}),signal:AbortSignal.timeout(45000)
     });
     if(!response.ok){
       console.error('MacroTurno Google Gemini status:',response.status);

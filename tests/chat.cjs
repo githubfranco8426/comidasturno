@@ -44,7 +44,7 @@ async function server(body,authorization='Bearer fake',extraHeaders={}){
   let call=0;
   global.fetch=async(url,options)=>{
    if(url.includes('supabase')) return {ok:true,json:async()=>({id:'server-test-owner'})};
-   call++;assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/interactions');assert.equal(options.headers['x-goog-api-key'],'test-only');const sent=JSON.parse(options.body);assert.equal(sent.model,'gemini-3.8-flash');assert.equal(sent.generation_config.tool_choice.allowed_tools.tools[0],'respond_macroturno');assert.equal(sent.store,false);assert.equal(sent.input.at(-1).type,'user_input');
+   call++;assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/interactions');assert.equal(options.headers['x-goog-api-key'],'test-only');const sent=JSON.parse(options.body);assert.equal(sent.model,'gemini-3.5-flash-lite');assert.equal(sent.generation_config.tool_choice.allowed_tools.tools[0],'respond_macroturno');assert.equal(sent.store,false);assert.equal(sent.input.at(-1).type,'user_input');
    return {ok:true,json:async()=>({steps:[{type:'function_call',name:'respond_macroturno',arguments:add}]})};
   };
   const success=await server(request);assert.equal(success.code,200);assert.equal(success.payload.operations.length,1);assert.equal(call,1);assert.equal(success.headers['Cache-Control'],'no-store');
